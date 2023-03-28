@@ -1,0 +1,21 @@
+{
+  "name": "Serve ClickSEG",
+  "type": "app",
+  "version": "2.0.0",
+  "description": "Deploy ClickSEG models for interactive instance segmentation",
+  "categories": [
+    "neural network",
+    "images",
+    "development"
+  ],
+  "session_tags": [
+    "sly_smart_annotation"
+  ],
+  "need_gpu": true,
+  "community_agent": false,
+  "docker_image": "supervisely/",
+  "instance_version": "6.6.7",
+  "entrypoint": "python -m uvicorn src.main:m.app --host 0.0.0.0 --port 8000 --ws websockets",
+  "port": 8000,
+  "task_location": "application_sessions"
+}
