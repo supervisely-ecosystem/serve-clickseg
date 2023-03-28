@@ -1,5 +1,6 @@
-# Prompt-based image filtering with CLIP
+# Interactive Segmentation with ClickSEG
+
+Based on: [https://github.com/XavierCHEN34/ClickSEG](https://github.com/XavierCHEN34/ClickSEG)
 
 TODO:
 - docker_image
-- try negative prompts
