@@ -1,9 +1,6 @@
-from src import clickseg_api
-
 import os
 import torch
 from pathlib import Path
-from PIL import Image, ImageOps
 
 import supervisely as sly
 from dotenv import load_dotenv
@@ -15,7 +12,9 @@ except ImportError:
     from typing_extensions import Literal
 from typing import List, Any, Dict
 
-from supervisely.app.v1.app_service import AppService
+from supervisely.nn.inference import InteractiveInstanceSegmentation
+from supervisely.nn.prediction_dto import PredictionMask
+
 from src.model_zoo import model_zoo
 from src import clickseg_api
 
@@ -24,7 +23,7 @@ load_dotenv("local.env")
 load_dotenv(os.path.expanduser("~/supervisely.env"))
 root_source_path = str(Path(__file__).parents[1])
 
-class ClickSegModel(sly.nn.inference.InstanceSegmentation):
+class ClickSegModel(InteractiveInstanceSegmentation):
     def load_on_device(
         self,
         model_dir: str = None,
@@ -51,27 +50,16 @@ class ClickSegModel(sly.nn.inference.InstanceSegmentation):
         self.class_names = ["object_mask"]
         print(f"✅ Model has been successfully loaded on {device.upper()} device")
 
-    def predict(self, image_path: str, settings: Dict[str, Any]) -> List[sly.nn.PredictionMask]:
+    def predict(self, image_path: str, clicks: List[InteractiveInstanceSegmentation.Click], image_changed: bool, settings: Dict[str, Any]) -> List[PredictionMask]:
         thres = 0.49
-        crop_rect = settings['crop']
-
         img = clickseg_api.load_image(image_path)
-
-        if settings['figureId'] is None:
+        if image_changed:
             print("reset_input_image")
             clickseg_api.reset_input_image(img, self.predictor, self.clicker)
-
-        # to local coords
-        from itertools import chain
-        for coords_xy in chain(settings['positive'], settings['negative']):
-            coords_xy[0] -= crop_rect[0][0]
-            coords_xy[1] -= crop_rect[0][1]
-
         self.clicker.reset()
-        self.clicker.add_clicks(settings['positive'], settings['negative'])
-
+        self.clicker.add_clicks(clicks)
         mask = clickseg_api.inference_step(img, self.predictor, self.clicker, pred_thr=thres)
-        res = [sly.nn.PredictionMask(class_name=self.class_names[0], mask=mask)]
+        res = sly.nn.PredictionMask(class_name=self.class_names[0], mask=mask)
         return res
     
     def get_models(self):
@@ -113,32 +101,20 @@ m = ClickSegModel(
     use_gui=True,
     # custom_inference_settings=os.path.join(root_source_path, "custom_settings.yaml"),
 )
+# m.load_on_device(m.model_dir)
 
 if sly.is_production():
     m.serve()
-
-    # my_app = AppService()
-    # @my_app.callback("smart_segmentation")
-    # def smart_segmentation(api: sly.Api, task_id, context, state, app_logger):
-    #     print("smart")
-    #     request_id = context["request_id"]
-    #     my_app.send_response(
-    #         request_id,
-    #         data={
-    #             # "origin": bitmap_origin,
-    #             # "bitmap": bitmap_data,
-    #             "success": True,
-    #             "error": None,
-    #         },
-    #     )
 else:
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("Using device:", device)
     m.load_on_device(m.model_dir, device)
-    image_path = "./demo_data/image_03.jpg"
-    settings = {"figureId":None,"crop":[[305,72],[1425,1091]],"positive":[[865,582]],"negative":[],"taskId":29920}
-    # results = m.predict(image_path, settings=settings)
-    results = m._inference_image_id(sly.Api(), {"image_id":19524016, "settings":settings})
+    image_path = "./demo_data/test.jpg"
+    clicks = [
+        InteractiveInstanceSegmentation.Click(50,150, True),
+        InteractiveInstanceSegmentation.Click(250,350, False),
+    ]
+    pred = m.predict(image_path, clicks, image_changed=True, settings={})
     vis_path = "./demo_data/image_03_prediction.jpg"
-    m.visualize(results, image_path, vis_path, thickness=0)
+    m.visualize([pred], image_path, vis_path, thickness=0)
     print(f"predictions and visualization have been saved: {vis_path}")

@@ -13,6 +13,7 @@ import torch
 import gdown
 
 from src.model_zoo import model_zoo
+from supervisely.nn.inference import InteractiveInstanceSegmentation
 
 
 class UserClicker:
@@ -25,12 +26,9 @@ class UserClicker:
     def add_click(self, x, y, is_positive):
         self.clicks_list.append(clicker.Click(is_positive, [y, x], indx=len(self.clicks_list)))
 
-    def add_clicks(self, positives, negatives):
-        print("Warn: add_clicks method ignores the order of clicks!")
-        for x,y in positives:
-            self.clicks_list.append(clicker.Click(True, [y, x], indx=len(self.clicks_list)))
-        for x,y in negatives:
-            self.clicks_list.append(clicker.Click(False, [y, x], indx=len(self.clicks_list)))
+    def add_clicks(self, clicks: List[InteractiveInstanceSegmentation.Click]):
+        for click in clicks:
+            self.add_click(click.x, click.y, click.is_positive)
 
     def reset(self):
         self.clicks_list = []
