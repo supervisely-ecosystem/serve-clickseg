@@ -85,7 +85,6 @@ def set_prev_mask(mask: np.ndarray, predictor: FocalPredictor):
 def inference_step(image: np.ndarray, predictor: FocalPredictor, clicker: UserClicker, pred_thr=0.49, progressive_mode=True):
     # image: [H,W,C]
     h,w,c = image.shape
-    prev_mask = predictor.prev_prediction.clone().squeeze().numpy()
     
     # Inference
     pred_probs = predictor.get_prediction(clicker)  # np.array: [H,W]
@@ -93,6 +92,7 @@ def inference_step(image: np.ndarray, predictor: FocalPredictor, clicker: UserCl
 
     # Merge with prev_mask
     if progressive_mode and len(clicker.get_clicks()) > 0:
+        prev_mask = predictor.prev_prediction.clone().squeeze().cpu().numpy()
         last_click = clicker.get_clicks()[-1]
         last_y, last_x = last_click.coords[0], last_click.coords[1]
         pred_mask = Progressive_Merge(pred_mask, prev_mask, last_y, last_x)
