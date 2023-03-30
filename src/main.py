@@ -51,14 +51,14 @@ class ClickSegModel(InteractiveInstanceSegmentation):
         print(f"✅ Model has been successfully loaded on {device.upper()} device")
 
     def predict(self, image_path: str, clicks: List[InteractiveInstanceSegmentation.Click], image_changed: bool, settings: Dict[str, Any]) -> List[PredictionMask]:
+        print(clicks)
         thres = 0.49
         img = clickseg_api.load_image(image_path)
         if image_changed:
             print("reset_input_image")
             clickseg_api.reset_input_image(img, self.predictor, self.clicker)
-        self.clicker.reset()
         self.clicker.add_clicks(clicks)
-        mask = clickseg_api.inference_step(img, self.predictor, self.clicker, pred_thr=thres)
+        mask = clickseg_api.inference_step(img, self.predictor, self.clicker, pred_thr=thres, progressive_mode=False)
         res = sly.nn.PredictionMask(class_name=self.class_names[0], mask=mask)
         return res
     
@@ -98,10 +98,10 @@ class ClickSegModel(InteractiveInstanceSegmentation):
 
 
 m = ClickSegModel(
-    use_gui=True,
+    # use_gui=True,
     # custom_inference_settings=os.path.join(root_source_path, "custom_settings.yaml"),
 )
-# m.load_on_device(m.model_dir)
+m.load_on_device(m.model_dir)
 
 if sly.is_production():
     m.serve()
@@ -110,10 +110,12 @@ else:
     print("Using device:", device)
     m.load_on_device(m.model_dir, device)
     image_path = "./demo_data/test.jpg"
-    clicks = [
-        InteractiveInstanceSegmentation.Click(50,150, True),
-        InteractiveInstanceSegmentation.Click(250,350, False),
-    ]
+    crop = [{'x': 249, 'y': 63}, {'x': 1029, 'y': 777}]
+    clicks = [{'x': 390, 'y': 357, 'is_positive': True}]
+    # clicks = [
+    #     InteractiveInstanceSegmentation.Click(390,357, True),
+    #     InteractiveInstanceSegmentation.Click(250,350, False),
+    # ]
     pred = m.predict(image_path, clicks, image_changed=True, settings={})
     vis_path = "./demo_data/image_03_prediction.jpg"
     m.visualize([pred], image_path, vis_path, thickness=0)
