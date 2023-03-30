@@ -16,7 +16,6 @@ from collections import OrderedDict
 #from mmseg.models.utils import *
 import attr
 
-from IPython import embed
 
 class MLP(nn.Module):
     """
