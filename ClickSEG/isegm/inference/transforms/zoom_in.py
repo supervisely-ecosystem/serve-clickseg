@@ -45,7 +45,7 @@ class ZoomIn(BaseTransform):
                 current_object_roi = get_object_roi(current_pred_mask, clicks_list,
                                                     self.expansion_ratio, self.min_crop_size)
         else:
-            print('None')
+            pass
 
         if current_object_roi is None:
             if self.skip_clicks >= 0:

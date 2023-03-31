@@ -15,13 +15,14 @@ from typing import List, Any, Dict
 from supervisely.nn.inference import InteractiveInstanceSegmentation
 from supervisely.nn.prediction_dto import PredictionMask
 
-from src.model_zoo import model_zoo
+from src.model_zoo import get_model_zoo
 from src import clickseg_api
 
 
 load_dotenv("local.env")
 load_dotenv(os.path.expanduser("~/supervisely.env"))
 root_source_path = str(Path(__file__).parents[1])
+
 
 class ClickSegModel(InteractiveInstanceSegmentation):
     def load_on_device(
@@ -34,8 +35,8 @@ class ClickSegModel(InteractiveInstanceSegmentation):
         else:
             self.model_name = "SegFormerB3-S2 (Comb)"
             sly.logger.warn(f"GUI can't be used, default model is {self.model_name}.")
-        
-        model_info = model_zoo[self.model_name]
+
+        model_info = get_model_zoo()[self.model_name]
         self.device = device
 
         sly.logger.info(f"Downloading the model {self.model_name}...")
@@ -44,35 +45,44 @@ class ClickSegModel(InteractiveInstanceSegmentation):
         assert res is not None, "Can't download model weights"
 
         sly.logger.info(f"Building the model {self.model_name}...")
-        self.predictor = clickseg_api.load_model(weights_path, self.device)
+        self.predictor = clickseg_api.load_model(self.model_name, weights_path, self.device)
         self.clicker = clickseg_api.UserClicker()
 
         self.class_names = ["object_mask"]
         print(f"✅ Model has been successfully loaded on {device.upper()} device")
 
-    def predict(self, image_path: str, clicks: List[InteractiveInstanceSegmentation.Click], image_changed: bool, settings: Dict[str, Any]) -> List[PredictionMask]:
-        print(clicks)
-        thres = 0.49
+    def predict(
+        self,
+        image_path: str,
+        clicks: List[InteractiveInstanceSegmentation.Click],
+        settings: Dict[str, Any],
+    ) -> PredictionMask:
+        conf_thres = settings.get("conf_thres", 0.55)
+        clickseg_api.set_prob_thres(conf_thres, self.predictor)
+
         img = clickseg_api.load_image(image_path)
-        if image_changed:
-            print("reset_input_image")
-            clickseg_api.reset_input_image(img, self.predictor, self.clicker)
+        clickseg_api.reset_input_image(img, self.predictor, self.clicker)
         self.clicker.add_clicks(clicks)
-        mask = clickseg_api.inference_step(img, self.predictor, self.clicker, pred_thr=thres, progressive_mode=False)
-        res = sly.nn.PredictionMask(class_name=self.class_names[0], mask=mask)
+
+        pred_mask, pred_probs = clickseg_api.inference_step(
+            img, self.predictor, self.clicker, pred_thr=conf_thres, progressive_mode=False
+        )
+
+        res = sly.nn.PredictionMask(class_name=self.class_names[0], mask=pred_mask)
+
+        sly.image.write("pred_soft.png", pred_probs * 255)
+        sly.image.write("pred.png", pred_mask * 255)
+        c = [x.__dict__ for x in clicks]
+        sly.json.dump_json_file(c, "demo_data/clicks.json", indent=2)
+
         return res
-    
+
     def get_models(self):
         models = []
-        for name, info in model_zoo.items():
-            info = info.copy()
+        for name, info in get_model_zoo().items():
+            info.pop("weights_url")
             models.append({"Model": name, **info})
         return models
-
-    def binarize_mask(self, mask, threshold):
-        mask[mask < threshold] = 0
-        mask[mask >= threshold] = 1
-        return mask
 
     @property
     def model_meta(self):
@@ -92,18 +102,15 @@ class ClickSegModel(InteractiveInstanceSegmentation):
 
     def get_classes(self) -> List[str]:
         return self.class_names
-    
+
     def support_custom_models(self):
         return False
 
 
 m = ClickSegModel(
-    # use_gui=True,
-    # custom_inference_settings=os.path.join(root_source_path, "custom_settings.yaml"),
+    use_gui=True,
+    custom_inference_settings=os.path.join(root_source_path, "custom_settings.yaml"),
 )
-
-device = "cuda" if torch.cuda.is_available() else "cpu"
-m.load_on_device(m.model_dir, device=device)
 
 if sly.is_production():
     m.serve()
@@ -111,14 +118,10 @@ else:
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("Using device:", device)
     m.load_on_device(m.model_dir, device)
-    image_path = "./demo_data/test.jpg"
-    crop = [{'x': 249, 'y': 63}, {'x': 1029, 'y': 777}]
-    clicks = [{'x': 390, 'y': 357, 'is_positive': True}]
-    # clicks = [
-    #     InteractiveInstanceSegmentation.Click(390,357, True),
-    #     InteractiveInstanceSegmentation.Click(250,350, False),
-    # ]
-    pred = m.predict(image_path, clicks, image_changed=True, settings={})
-    vis_path = "./demo_data/image_03_prediction.jpg"
+    image_path = "demo_data/aniket-solankar.jpg"
+    clicks_json = sly.json.load_json_file("demo_data/clicks.json")
+    clicks = [InteractiveInstanceSegmentation.Click(**p) for p in clicks_json]
+    pred = m.predict(image_path, clicks, settings={})
+    vis_path = f"demo_data/prediction.jpg"
     m.visualize([pred], image_path, vis_path, thickness=0)
     print(f"predictions and visualization have been saved: {vis_path}")
