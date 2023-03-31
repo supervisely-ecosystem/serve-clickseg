@@ -31,12 +31,15 @@ class ClickSegModel(InteractiveInstanceSegmentation):
         device: Literal["cpu", "cuda", "cuda:0", "cuda:1", "cuda:2", "cuda:3"] = "cpu",
     ):
         if self.gui:
-            self.model_name = self.gui.get_checkpoint_info()["Model"]
+            model_index = self.gui._models_table.get_selected_row_index()
+            model_info = get_model_zoo()[model_index]
+            self.model_name = model_info["model_id"]
         else:
-            self.model_name = "SegFormerB3-S2 (Comb)"
+            model_info = get_model_zoo()[9]
+            self.model_name = model_info["model_id"]
             sly.logger.warn(f"GUI can't be used, default model is {self.model_name}.")
 
-        model_info = get_model_zoo()[self.model_name]
+        self.model_info = model_info
         self.device = device
 
         sly.logger.info(f"Downloading the model {self.model_name}...")
@@ -45,7 +48,7 @@ class ClickSegModel(InteractiveInstanceSegmentation):
         assert res is not None, "Can't download model weights"
 
         sly.logger.info(f"Building the model {self.model_name}...")
-        self.predictor = clickseg_api.load_model(self.model_name, weights_path, self.device)
+        self.predictor = clickseg_api.load_model(model_info, weights_path, self.device)
         self.clicker = clickseg_api.UserClicker()
 
         self.class_names = ["object_mask"]
@@ -70,18 +73,19 @@ class ClickSegModel(InteractiveInstanceSegmentation):
 
         res = sly.nn.PredictionMask(class_name=self.class_names[0], mask=pred_mask)
 
-        sly.image.write("pred_soft.png", pred_probs * 255)
-        sly.image.write("pred.png", pred_mask * 255)
-        c = [x.__dict__ for x in clicks]
-        sly.json.dump_json_file(c, "demo_data/clicks.json", indent=2)
+        # sly.image.write("pred_soft.png", pred_probs * 255)
+        # sly.image.write("pred.png", pred_mask * 255)
+        # c = [x.__dict__ for x in clicks]
+        # sly.json.dump_json_file(c, "demo_data/clicks.json", indent=2)
 
         return res
 
     def get_models(self):
         models = []
-        for name, info in get_model_zoo().items():
+        for info in get_model_zoo():
             info.pop("weights_url")
-            models.append({"Model": name, **info})
+            info.pop("model_id")
+            models.append(info)
         return models
 
     @property

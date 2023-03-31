@@ -37,12 +37,12 @@ class UserClicker:
 
 def download_weights(url, output_path):
     if not os.path.exists(output_path):
-        res = gdown.download(url, output=output_path)
+        res = gdown.download(url, output=output_path, fuzzy=True)
         return res
     return output_path
 
 
-def load_model(model_name, weights_path, device):
+def load_model(model_info, weights_path, device):
     # DEFAULT PARAMS:
     mode = "FocalClick"  # ['CDNet', 'Baseline', 'FocalClick']
     infer_size = 384
@@ -52,7 +52,6 @@ def load_model(model_name, weights_path, device):
     target_crop_r = 1.4
     skip_clicks = -1
 
-    model_info = get_model_zoo()[model_name]
     mode = model_info["mode"]
 
     state_dict = torch.load(weights_path, map_location=device)
