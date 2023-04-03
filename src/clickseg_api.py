@@ -14,7 +14,7 @@ import torch
 import gdown
 
 from src.model_zoo import get_model_zoo
-from supervisely.nn.inference import InteractiveInstanceSegmentation
+from supervisely.nn.inference import InteractiveSegmentation
 
 
 class UserClicker:
@@ -27,7 +27,7 @@ class UserClicker:
     def add_click(self, x, y, is_positive):
         self.clicks_list.append(clicker.Click(is_positive, [y, x], indx=len(self.clicks_list)))
 
-    def add_clicks(self, clicks: List[InteractiveInstanceSegmentation.Click]):
+    def add_clicks(self, clicks: List[InteractiveSegmentation.Click]):
         for click in clicks:
             self.add_click(click.x, click.y, click.is_positive)
 
@@ -119,7 +119,7 @@ def inference_step(
     predictor: FocalPredictor,
     clicker: UserClicker,
     pred_thr=0.49,
-    progressive_mode=True,
+    progressive_mode=False,
 ) -> np.ndarray:
     # image: [H,W,C]
     h, w, c = image.shape

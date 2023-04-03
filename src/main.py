@@ -12,8 +12,8 @@ except ImportError:
     from typing_extensions import Literal
 from typing import List, Any, Dict
 
-from supervisely.nn.inference import InteractiveInstanceSegmentation
-from supervisely.nn.prediction_dto import PredictionMask
+from supervisely.nn.inference import InteractiveSegmentation
+from supervisely.nn.prediction_dto import PredictionSegmentation
 
 from src.model_zoo import get_model_zoo
 from src import clickseg_api
@@ -24,42 +24,40 @@ load_dotenv(os.path.expanduser("~/supervisely.env"))
 root_source_path = str(Path(__file__).parents[1])
 
 
-class ClickSegModel(InteractiveInstanceSegmentation):
+class ClickSegModel(InteractiveSegmentation):
     def load_on_device(
         self,
         model_dir: str = None,
         device: Literal["cpu", "cuda", "cuda:0", "cuda:1", "cuda:2", "cuda:3"] = "cpu",
     ):
-        if self.gui:
+        if self.gui and sly.is_production():
             model_index = self.gui._models_table.get_selected_row_index()
             model_info = get_model_zoo()[model_index]
-            self.model_name = model_info["model_id"]
         else:
             model_info = get_model_zoo()[9]
-            self.model_name = model_info["model_id"]
-            sly.logger.warn(f"GUI can't be used, default model is {self.model_name}.")
+            sly.logger.warn(f"GUI can't be used, default model is {model_info['model_id']}.")
 
+        self.model_name = model_info["model_id"]
         self.model_info = model_info
         self.device = device
 
         sly.logger.info(f"Downloading the model {self.model_name}...")
         weights_path = os.path.join(model_dir, f"{self.model_name}.pth")
         res = clickseg_api.download_weights(model_info["weights_url"], weights_path)
-        assert res is not None, "Can't download model weights"
+        assert res is not None, f"Can't download model weights {model_info['weights_url']}"
 
         sly.logger.info(f"Building the model {self.model_name}...")
         self.predictor = clickseg_api.load_model(model_info, weights_path, self.device)
         self.clicker = clickseg_api.UserClicker()
 
-        self.class_names = ["object_mask"]
         print(f"✅ Model has been successfully loaded on {device.upper()} device")
 
     def predict(
         self,
         image_path: str,
-        clicks: List[InteractiveInstanceSegmentation.Click],
+        clicks: List[InteractiveSegmentation.Click],
         settings: Dict[str, Any],
-    ) -> PredictionMask:
+    ) -> PredictionSegmentation:
         conf_thres = settings.get("conf_thres", 0.55)
         clickseg_api.set_prob_thres(conf_thres, self.predictor)
 
@@ -71,12 +69,7 @@ class ClickSegModel(InteractiveInstanceSegmentation):
             img, self.predictor, self.clicker, pred_thr=conf_thres, progressive_mode=False
         )
 
-        res = sly.nn.PredictionMask(class_name=self.class_names[0], mask=pred_mask)
-
-        # sly.image.write("pred_soft.png", pred_probs * 255)
-        # sly.image.write("pred.png", pred_mask * 255)
-        # c = [x.__dict__ for x in clicks]
-        # sly.json.dump_json_file(c, "demo_data/clicks.json", indent=2)
+        res = PredictionSegmentation(mask=pred_mask)
 
         return res
 
@@ -88,24 +81,10 @@ class ClickSegModel(InteractiveInstanceSegmentation):
             models.append(info)
         return models
 
-    @property
-    def model_meta(self):
-        if self._model_meta is None:
-            self._model_meta = sly.ProjectMeta(
-                [sly.ObjClass(self.class_names[0], sly.Bitmap, [255, 0, 0])]
-            )
-            self._get_confidence_tag_meta()
-        return self._model_meta
-
     def get_info(self):
         info = super().get_info()
-        info["videos_support"] = False
-        info["async_video_inference_support"] = False
         info["model_name"] = self.model_name
         return info
-
-    def get_classes(self) -> List[str]:
-        return self.class_names
 
     def support_custom_models(self):
         return False
@@ -115,6 +94,7 @@ m = ClickSegModel(
     use_gui=True,
     custom_inference_settings=os.path.join(root_source_path, "custom_settings.yaml"),
 )
+m.gui._models_table.select_row(9)
 
 if sly.is_production():
     m.serve()
@@ -124,7 +104,7 @@ else:
     m.load_on_device(m.model_dir, device)
     image_path = "demo_data/aniket-solankar.jpg"
     clicks_json = sly.json.load_json_file("demo_data/clicks.json")
-    clicks = [InteractiveInstanceSegmentation.Click(**p) for p in clicks_json]
+    clicks = [InteractiveSegmentation.Click(**p) for p in clicks_json]
     pred = m.predict(image_path, clicks, settings={})
     vis_path = f"demo_data/prediction.jpg"
     m.visualize([pred], image_path, vis_path, thickness=0)

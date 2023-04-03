@@ -37,6 +37,19 @@
                 "DEBUG_WITH_SLY_NET": "1",
                 "SLY_APP_DATA_DIR": "${workspaceFolder}/app_data"
             }
-        }
+        },
+        {
+            "name": "test.py",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/test.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}:${PYTHONPATH}",
+                "LOG_LEVEL": "DEBUG",
+                "SLY_APP_DATA_DIR": "${workspaceFolder}/app_data"
+            }
+        },
     ]
 }
