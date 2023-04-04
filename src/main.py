@@ -49,7 +49,6 @@ class ClickSegModel(InteractiveSegmentation):
         sly.logger.info(f"Building the model {self.model_name}...")
         self.predictor = clickseg_api.load_model(model_info, weights_path, self.device)
         self.clicker = clickseg_api.UserClicker()
-
         print(f"✅ Model has been successfully loaded on {device.upper()} device")
 
     def predict(
@@ -60,7 +59,6 @@ class ClickSegModel(InteractiveSegmentation):
     ) -> PredictionSegmentation:
         conf_thres = settings.get("conf_thres", 0.55)
         clickseg_api.set_prob_thres(conf_thres, self.predictor)
-
         img = clickseg_api.load_image(image_path)
         clickseg_api.reset_input_image(img, self.predictor, self.clicker)
         self.clicker.add_clicks(clicks)
@@ -68,9 +66,13 @@ class ClickSegModel(InteractiveSegmentation):
         pred_mask, pred_probs = clickseg_api.inference_step(
             img, self.predictor, self.clicker, pred_thr=conf_thres, progressive_mode=False
         )
-
         res = PredictionSegmentation(mask=pred_mask)
 
+        if os.environ.get("DEBUG_WITH_SLY_NET"):
+            # debug
+            sly.image.write("crop.jpg", img)
+            sly.image.write("pred.jpg", pred_mask * 255)
+            sly.image.write("pred_probs.jpg", pred_probs * 255)
         return res
 
     def get_models(self):
