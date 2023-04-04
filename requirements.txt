@@ -1,5 +1,5 @@
 --extra-index-url https://download.pytorch.org/whl/lts/1.8/cu111
-git+https://github.com/supervisely/supervisely@interactive-segmentation
+supervisely==6.71.0
 torch==1.8.2
 torchvision==0.9.2
 mmcv-full==1.4.1
