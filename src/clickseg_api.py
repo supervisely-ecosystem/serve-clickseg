@@ -45,6 +45,7 @@ def download_weights(url, output_path):
 def load_model(model_info, weights_path, device):
     # DEFAULT PARAMS:
     mode = "FocalClick"  # ['CDNet', 'Baseline', 'FocalClick']
+    net_clicks_limit = 100
     infer_size = 384
     thresh = 0.55
     focus_crop_r = 1.4
@@ -57,7 +58,10 @@ def load_model(model_info, weights_path, device):
     state_dict = torch.load(weights_path, map_location=device)
     model: torch.Module = utils.load_single_is_model(state_dict, device)
     predictor_params, zoom_in_params = get_predictor_and_zoomin_params(
-        target_size=target_size, target_crop_r=target_crop_r, skip_clicks=skip_clicks
+        net_clicks_limit=net_clicks_limit,
+        target_size=target_size,
+        target_crop_r=target_crop_r,
+        skip_clicks=skip_clicks,
     )
 
     predictor = get_predictor(
