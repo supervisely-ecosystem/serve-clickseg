@@ -1,6 +1,6 @@
 from bs4 import BeautifulSoup
 
-with open("src/models.html") as f:
+with open("parse/models.html") as f:
     text = f.read()
 soup = BeautifulSoup(text)
 
@@ -24,6 +24,7 @@ for table, mode in zip(soup.find_all("table"), modes):
         model_name, size = model_name.split("(")
         size = size[:-1]
         model_id = model_name.lower() + "_" + str(len(model_zoo))
+        pascal_score = cells[4].text
         info = {
             "model_id": model_id,
             "model": model_name,
@@ -31,10 +32,11 @@ for table, mode in zip(soup.find_all("table"), modes):
             "weights_url": "",
             "trained on": dataset,
             "size": size,
+            "NoC 85/90% (Pascal VOC)": pascal_score,
         }
         model_zoo.append(info)
 
 import json
 
-with open("src/models.json", "w") as f:
+with open("parse/models.json", "w") as f:
     json.dump(model_zoo, f, indent=4)

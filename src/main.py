@@ -94,9 +94,14 @@ m = ClickSegModel(
     use_gui=True,
     custom_inference_settings=os.path.join(root_source_path, "custom_settings.yaml"),
 )
-m.gui._models_table.select_row(9)
 
 if sly.is_production():
+    if m.gui:
+        m.gui._models_table.select_row(9)
+    else:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        print("Using device:", device)
+        m.load_on_device(m.model_dir, device=device)
     m.serve()
 else:
     device = "cuda" if torch.cuda.is_available() else "cpu"
