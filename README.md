@@ -195,9 +195,9 @@ Iterative Training: Yes
             <td align="center"><a href="https://drive.google.com/drive/folders/1XzUlpPqbzAyMt009HVpEeW31ln1FeXfX?usp=sharing">SegFormerB3-S2<br>(174.56 MB)</a></td>
             <td>1.44/1.50</td>
             <td>1.55/1.92</td>
-            <td>2.46/2.88</td>
-            <td>2.32/3.12</td>
-            <td>3.53/5.59</td>
+            <td><b>2.46/2.88</b></td>
+            <td><b>2.32/3.12</b></td>
+            <td><b>3.53/5.59</b></td>
             <td>3.61/4.90</td>
             <td>4.06/5.89</td>
             <td>2.00/2.76</td>
@@ -205,16 +205,16 @@ Iterative Training: Yes
     </tbody>
     <tbody align="center">
         <tr>
-            <td rowspan="1">Combined<br>Datasets</td>
-            <td align="center"><a href="https://drive.google.com/drive/folders/1XzUlpPqbzAyMt009HVpEeW31ln1FeXfX?usp=sharing">SegFormerB3-S2<br>(174.56 MB)</a></td>
-            <td>1.22/1.26</td>
-            <td>1.35/1.48</td>
+            <td rowspan="1"><b>Combined<br>Datasets</b></td>
+            <td align="center"><b><a href="https://drive.google.com/drive/folders/1XzUlpPqbzAyMt009HVpEeW31ln1FeXfX?usp=sharing">SegFormerB3-S2<br>(174.56 MB)</a></b></td>
+            <td><b>1.22/1.26</b></td>
+            <td><b>1.35/1.48</b></td>
             <td>2.54/2.96</td>
             <td>2.51/3.33</td>
             <td>3.70/5.84</td>
-            <td>2.92/4.52</td>
-            <td>3.98/5.75</td>
-            <td>1.98/2.72</td>
+            <td><b>2.92/4.52</b></td>
+            <td><b>3.98/5.75</b></td>
+            <td><b>1.98/2.72</b></td>
         </tr>
     </tbody>
 </table>
