@@ -95,24 +95,24 @@ inference_settings_path = os.path.join(root_source_path, "custom_settings.yaml")
 
 if sly.is_production() and not os.environ.get("DEBUG_WITH_SLY_NET"):
     # production
-    model = ClickSegModel(use_gui=True, custom_inference_settings=inference_settings_path)
-    model.gui._models_table.select_row(9)
-    model.serve()
+    m = ClickSegModel(use_gui=True, custom_inference_settings=inference_settings_path)
+    m.gui._models_table.select_row(9)
+    m.serve()
 else:
     # debug
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("Using device:", device)
-    model = ClickSegModel(use_gui=False, custom_inference_settings=inference_settings_path)
-    model.load_on_device(model.model_dir, device)
+    m = ClickSegModel(use_gui=False, custom_inference_settings=inference_settings_path)
+    m.load_on_device(m.model_dir, device)
     if os.environ.get("DEBUG_WITH_SLY_NET"):
         print("mode=DEBUG_WITH_SLY_NET")
-        model.serve()
+        m.serve()
     else:
         print("mode=LOCAL_DEBUG")
         image_path = "demo_data/aniket-solankar.jpg"
         clicks_json = sly.json.load_json_file("demo_data/clicks.json")
         clicks = [InteractiveSegmentation.Click(**p) for p in clicks_json]
-        pred = model.predict(image_path, clicks, settings={})
+        pred = m.predict(image_path, clicks, settings={})
         vis_path = f"demo_data/prediction.jpg"
-        model.visualize([pred], image_path, vis_path, thickness=0)
+        m.visualize([pred], image_path, vis_path, thickness=0)
         print(f"predictions and visualization have been saved: {vis_path}")
