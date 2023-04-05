@@ -389,7 +389,7 @@ Iterative Training: Yes
 <img src="https://user-images.githubusercontent.com/119248312/229995019-9a9dece7-516f-4b44-8b73-cdd01c1a4178.jpg" width="90%"/>
 </div>
 
-<p align="left"> <img align="center" src="https://i.imgur.com/kiwbBkj.png" width="200"> <b>—</b> SmartTool selector button, switch between SmartTool apps and models</p>
+<p align="left"> <img align="center" src="https://user-images.githubusercontent.com/119248312/229996692-5c4cd446-adcb-409b-a1a6-af51d6c8bb50.png" width="200"> <b>—</b> SmartTool selector button, switch between SmartTool apps and models</p>
 
 <div align="center" markdown>
 <img src="https://user-images.githubusercontent.com/119248312/229995028-d33b0423-6510-4747-a929-e0e860ccabff.jpg" width="90%"/>
