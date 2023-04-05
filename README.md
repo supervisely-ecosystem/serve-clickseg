@@ -341,7 +341,10 @@ Iterative Training: Yes
 </table>
 
 ## Prediction preview (SegformerB3-S2):
-![prediction](https://raw.githubusercontent.com/supervisely-ecosystem/serve-clickseg/master/demo_data/prediction.jpg)
+
+<div align="center" markdown>
+ <img src="https://raw.githubusercontent.com/supervisely-ecosystem/serve-clickseg/master/demo_data/prediction.jpg" width="40%"/>
+</div>
 
 ## How to run
 
@@ -382,7 +385,7 @@ Iterative Training: Yes
 <img src="https://i.imgur.com/FATcNZU.png" width="90%"/>
 </div>
 
-# Acknowledgment
+## Acknowledgment
 
 This app is based on the great work `ClickSEG: A Codebase for Click-Based Interactive Segmentation` [github](https://github.com/XavierCHEN34/ClickSEG). ![GitHub Org's stars](https://img.shields.io/github/stars/XavierCHEN34/ClickSEG?style=social)
 
