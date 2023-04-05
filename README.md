@@ -36,7 +36,7 @@ ClickSeg Interactive segmentation algorithms allow users to explicitly control t
 </p>
 
 <p align="center">
-<img src="https://user-images.githubusercontent.com/119248312/229989006-68ff412f-874c-455c-859d-cbbe68aab941.jpg" width="950"/>
+<img src="https://user-images.githubusercontent.com/119248312/229991240-9afc6fc9-fc94-45b0-bf96-40d1dda82ba0.jpg" width="950"/>
 </p>
 
 Besides segmenting new objects, proposed method allows to correct external masks, e.g. produced by other
