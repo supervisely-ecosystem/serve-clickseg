@@ -1,6 +1,6 @@
 --extra-index-url https://download.pytorch.org/whl/lts/1.8/cu111
 # supervisely==6.71.0
-git+https://github.com/supervisely/supervisely@inference-queue
+git+https://github.com/supervisely/supervisely@interactive-segm-threadsafe
 torch==1.8.2
 torchvision==0.9.2
 mmcv-full==1.4.1
