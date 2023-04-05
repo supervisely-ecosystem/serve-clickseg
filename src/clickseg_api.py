@@ -45,7 +45,8 @@ def download_weights(url, output_path):
 def load_model(model_info, weights_path, device):
     # DEFAULT PARAMS:
     mode = "FocalClick"  # ['CDNet', 'Baseline', 'FocalClick']
-    net_clicks_limit = 100
+    net_clicks_limit = 20
+    print(f"{net_clicks_limit=}")
     infer_size = 384
     thresh = 0.55
     focus_crop_r = 1.4
