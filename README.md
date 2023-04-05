@@ -141,7 +141,7 @@ Iterative Training: Yes
             <td>NoC<br>85/90%</td>
         </tr>
     </thead>
-        <tbody align="center">
+        <!-- <tbody align="center">
         <tr>
             <td rowspan="1">COCO+<br>LVIS</td>
             <td align="center"><a href="https://drive.google.com/drive/folders/1XzUlpPqbzAyMt009HVpEeW31ln1FeXfX?usp=sharing">HRNet18s-S1<br>(16.58 MB)</a></td>
@@ -196,7 +196,7 @@ Iterative Training: Yes
             <td>4.80/6.63</td>
             <td>2.37/3.26</td>
         </tr>
-    </tbody>
+    </tbody> -->
     <tbody align="center">
         <tr>
             <td rowspan="1">COCO+<br>LVIS</td>
