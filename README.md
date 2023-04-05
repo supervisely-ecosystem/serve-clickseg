@@ -35,6 +35,10 @@ ClickSeg Interactive segmentation algorithms allow users to explicitly control t
 <img src="https://user-images.githubusercontent.com/115161827/229972031-fdf2d0a4-b919-4bd8-88b1-99e284c82e26.gif" width="900"/>
 </p>
 
+<p align="center">
+<img src="https://user-images.githubusercontent.com/119248312/229989006-68ff412f-874c-455c-859d-cbbe68aab941.jpg" width="950"/>
+</p>
+
 Besides segmenting new objects, proposed method allows to correct external masks, e.g. produced by other
 instance or semantic segmentation models. A user can fix false negative and false positive regions with positive (green)
 and negative (red) clicks, respectively.
