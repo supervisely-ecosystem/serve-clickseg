@@ -1,12 +1,12 @@
 <div align="center" markdown>
-<img src="xxx"/>  
+<img src="https://user-images.githubusercontent.com/119248312/229955889-0f66e61d-4590-4e20-b56b-81ae6ea9dbcd.jpg"/>  
 
 # Interactive Segmentation with ClickSEG
   
 <p align="center">
   <a href="#Overview">Overview</a> •
   <a href="#Pretrained-models">Pretrained models</a> •
-  <a href="#How-to-run">How to run</a> •
+  <a href="#How-to-Run">How to Run</a> •
   <a href="#Controls">Controls</a> •
   <a href="#Acknowledgment">Acknowledgment</a> 
 </p>
@@ -346,7 +346,7 @@ Iterative Training: Yes
  <img src="https://raw.githubusercontent.com/supervisely-ecosystem/serve-clickseg/master/demo_data/prediction.jpg" width="40%"/>
 </div>
 
-## How to run
+## How to Run
 
 1. Start the application from Ecosystem
 
@@ -354,12 +354,14 @@ Iterative Training: Yes
 
 2. Select the pretrained model and deploy it on your device by clicking `Serve` button
 
-<img src="xxx" />
+<img src="https://user-images.githubusercontent.com/115161827/229956100-ae83590b-4c6a-4015-b217-345b51003ee5.png" />
 
 3. You'll see `Model has been successfully loaded` message indicating that the application has been successfully started and you can work with it from now on.
- 
-<img src="xxx" />
 
+<div align="center" markdown>
+  <img src="https://user-images.githubusercontent.com/115161827/229956389-bb8780db-9bd8-442b-aa28-cfc552316bc5.png" height="140px" />
+</div>
+  
 ## Controls
 
 | Key                                                           | Description                               |
