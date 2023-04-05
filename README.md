@@ -26,7 +26,7 @@ Application key points:
 - Deploy on GPU(faster) or CPU(slower)
 - Accurate predictions in most cases
 - Correct prediction interactively with `red` and `green` clicks
-- Select from [14 pretrained models](../README.md#Pretrained-models)
+- Select from <a href=#Pretrained-models> 14 pretrained models </a>
 - Models are class agnostic, you can segment any object from any domain
 
 ClickSeg Interactive segmentation algorithms allow users to explicitly control the predictions using interactive input at several iterations, in contrast to common semantic and instance segmentation algorithms that can only input an image and output a segmentation mask in one pass. Such interaction makes it possible to select an object of interest and correct prediction errors.
