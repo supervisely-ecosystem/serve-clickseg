@@ -16,6 +16,38 @@
         "size": "89.72 MB"
     },
     {
+        "model_id": "hrnet18s-s1_2",
+        "model": "HRNet18s-S1",
+        "mode": "FocalClick",
+        "weights_url": "https://drive.google.com/file/d/1WIjTcQEYPlJDBrc5MTtNhzZhTxL1hYqX/view?usp=share_link",
+        "trained on": "COCO+LVIS",
+        "size": "16.58 MB"
+    },
+    {
+        "model_id": "hrnet18s-s2_3",
+        "model": "HRNet18s-S2",
+        "mode": "FocalClick",
+        "weights_url": "https://drive.google.com/file/d/1szNv8MUAIEX8FM9Uf2Z9LIZvsirHlhTK/view?usp=share_link",
+        "trained on": "COCO+LVIS",
+        "size": "16.58 MB"
+    },
+    {
+        "model_id": "hrnet32-s2_4",
+        "model": "HRNet32-S2",
+        "mode": "FocalClick",
+        "weights_url": "https://drive.google.com/file/d/1pRKPL83CUK7x5GnAEsMUAMv9uAR4LBuC/view?usp=share_link",
+        "trained on": "COCO+LVIS",
+        "size": "119.11 MB"
+    },
+    {
+        "model_id": "hrnet32-s2_5",
+        "model": "HRNet32-S2",
+        "mode": "FocalClick",
+        "weights_url": "https://drive.google.com/file/d/1yiXIFqR7a9UWRF8KrY8zgcP-gEB1POLS/view?usp=share_link",
+        "trained on": "COCO, LVIS, ADE20K, MSRA10K, DUT, YoutubeVOS, ThinObject, HFlicker",
+        "size": "119.11 MB"
+    },
+    {
         "model_id": "segformerb0-s1_6",
         "model": "SegFormerB0-S1",
         "mode": "FocalClick",

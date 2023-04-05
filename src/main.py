@@ -25,6 +25,8 @@ root_source_path = str(Path(__file__).parents[1])
 
 
 class ClickSegModel(InteractiveSegmentation):
+    DEFAULT_ROW_IDX = 5
+
     def load_on_device(
         self,
         model_dir: str = None,
@@ -34,7 +36,7 @@ class ClickSegModel(InteractiveSegmentation):
             model_index = self.gui._models_table.get_selected_row_index()
             model_info = get_model_zoo()[model_index]
         else:
-            model_info = get_model_zoo()[9]
+            model_info = get_model_zoo()[self.DEFAULT_ROW_IDX]
             sly.logger.warn(f"GUI can't be used, default model is {model_info['model_id']}.")
 
         self.model_name = model_info["model_id"]
@@ -92,20 +94,22 @@ class ClickSegModel(InteractiveSegmentation):
         return False
 
 
-inference_settings_path = os.path.join(root_source_path, "custom_settings.yaml")
+# inference_settings_path = os.path.join(root_source_path, "custom_settings.yaml")
+inference_settings_path = None
 
 
 if sly.is_production() and not os.environ.get("DEBUG_WITH_SLY_NET"):
     # production
     m = ClickSegModel(use_gui=True, custom_inference_settings=inference_settings_path)
-    m.gui._models_table.select_row(9)
+    m.gui._models_table.select_row(ClickSegModel.DEFAULT_ROW_IDX)
     m.serve()
 else:
     # debug
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("Using device:", device)
-    m = ClickSegModel(use_gui=False, custom_inference_settings=inference_settings_path)
-    m.load_on_device(m.model_dir, device)
+    m = ClickSegModel(use_gui=True, custom_inference_settings=inference_settings_path)
+    m.gui._models_table.select_row(ClickSegModel.DEFAULT_ROW_IDX)
+    # m.load_on_device(m.model_dir, device)
     if os.environ.get("DEBUG_WITH_SLY_NET"):
         print("mode=DEBUG_WITH_SLY_NET")
         m.serve()
