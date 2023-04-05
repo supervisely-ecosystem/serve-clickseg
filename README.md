@@ -1,11 +1,47 @@
+<div align="center" markdown>
+<img src="https://user-images.githubusercontent.com/119248312/229955889-0f66e61d-4590-4e20-b56b-81ae6ea9dbcd.jpg"/>  
+
 # Interactive Segmentation with ClickSEG
+  
+<p align="center">
+  <a href="#Overview">Overview</a> •
+  <a href="#Pretrained-models">Pretrained models</a> •
+  <a href="#How-to-Run">How to Run</a> •
+  <a href="#Controls">Controls</a> •
+  <a href="#Acknowledgment">Acknowledgment</a> 
+</p>
 
-Based on: [https://github.com/XavierCHEN34/ClickSEG](https://github.com/XavierCHEN34/ClickSEG)
+[![](https://img.shields.io/badge/supervisely-ecosystem-brightgreen)](https://ecosystem.supervise.ly/apps/supervisely-ecosystem/serve-clickseg)
+[![](https://img.shields.io/badge/slack-chat-green.svg?logo=slack)](https://supervise.ly/slack)
+![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/supervisely-ecosystem/serve-clickseg)
+[![views](https://app.supervise.ly/img/badges/views/supervisely-ecosystem/serve-clickseg.png)](https://supervise.ly)
+[![runs](https://app.supervise.ly/img/badges/runs/supervisely-ecosystem/serve-clickseg.png)](https://supervise.ly)
+ 
+</div>
 
-## Prediction preview (SegformerB3-S2):
-![prediction](https://raw.githubusercontent.com/supervisely-ecosystem/serve-clickseg/master/demo_data/prediction.jpg)
+## Overview
 
----
+Application key points:  
+- Manually selected ROI
+- Deploy on GPU(faster) or CPU(slower)
+- Accurate predictions in most cases
+- Correct prediction interactively with `red` and `green` clicks
+- Select from <a href=#Pretrained-models> 14 pretrained models </a>
+- Models are class agnostic, you can segment any object from any domain
+
+ClickSeg Interactive segmentation algorithms allow users to explicitly control the predictions using interactive input at several iterations, in contrast to common semantic and instance segmentation algorithms that can only input an image and output a segmentation mask in one pass. Such interaction makes it possible to select an object of interest and correct prediction errors.
+
+<p align="center">
+<img src="https://user-images.githubusercontent.com/115161827/229972031-fdf2d0a4-b919-4bd8-88b1-99e284c82e26.gif" width="900"/>
+</p>
+
+<p align="center">
+<img src="https://user-images.githubusercontent.com/119248312/229991240-9afc6fc9-fc94-45b0-bf96-40d1dda82ba0.jpg" width="950"/>
+</p>
+
+Besides segmenting new objects, proposed method allows to correct external masks, e.g. produced by other
+instance or semantic segmentation models. A user can fix false negative and false positive regions with positive (green)
+and negative (red) clicks, respectively.
 
 ## Pretrained models
 
@@ -310,4 +346,57 @@ Iterative Training: Yes
     </tbody>
 </table>
 
----
+## Prediction preview (SegformerB3-S2):
+
+<div align="center" markdown>
+ <img src="https://raw.githubusercontent.com/supervisely-ecosystem/serve-clickseg/master/demo_data/prediction.jpg" width="40%"/>
+</div>
+
+## How to Run
+
+1. Start the application from Ecosystem.
+
+<p align="center">
+<img src="https://user-images.githubusercontent.com/115161827/229979147-ba78163b-2a0f-49c4-99ad-58b6855b98ab.gif" width="900"/>
+</p>
+
+2. Select the pretrained model and deploy it on your device by clicking `Serve` button.
+
+<img src="https://user-images.githubusercontent.com/115161827/229956100-ae83590b-4c6a-4015-b217-345b51003ee5.png" />
+
+3. You'll see `Model has been successfully loaded` message indicating that the application has been successfully started and you can work with it from now on.
+
+<div align="center" markdown>
+  <img src="https://user-images.githubusercontent.com/115161827/229956389-bb8780db-9bd8-442b-aa28-cfc552316bc5.png" height="140px" />
+</div>
+  
+## Controls
+
+| Key                                                           | Description                               |
+| ------------------------------------------------------------- | ------------------------------------------|
+| <kbd>Left Mouse Button</kbd>                                  | Place a positive click                    |
+| <kbd>Shift + Left Mouse Button</kbd>                          | Place a negative click                    |
+| <kbd>Scroll Wheel</kbd>                                       | Zoom an image in and out                  |
+| <kbd>Right Mouse Button</kbd> + <br> <kbd>Move Mouse</kbd>    | Move an image                             |
+| <kbd>Space</kbd>                                              | Finish the current object mask            |
+| <kbd>Shift + H</kbd>                                          | Higlight instances with random colors     |
+| <kbd>Ctrl + H</kbd>                                           | Hide all labels                           |
+
+
+<p align="left"> <img align="center" src="https://i.imgur.com/jxySekj.png" width="50"> <b>—</b> Auto add positivie point to rectangle button (<b>ON</b> by default for SmartTool apps) </p>
+
+<div align="center" markdown>
+<img src="https://user-images.githubusercontent.com/119248312/229995019-9a9dece7-516f-4b44-8b73-cdd01c1a4178.jpg" width="90%"/>
+</div>
+
+<p align="left"> <img align="center" src="https://user-images.githubusercontent.com/119248312/229998670-21ced133-903f-48ce-babb-e22408d2580c.png" width="150"> <b>—</b> SmartTool selector button, switch between SmartTool apps and models</p>
+
+<div align="center" markdown>
+<img src="https://user-images.githubusercontent.com/119248312/229995028-d33b0423-6510-4747-a929-e0e860ccabff.jpg" width="90%"/>
+</div>
+
+## Acknowledgment
+
+This app is based on the great work `ClickSEG: A Codebase for Click-Based Interactive Segmentation` [github](https://github.com/XavierCHEN34/ClickSEG). ![GitHub Org's stars](https://img.shields.io/github/stars/XavierCHEN34/ClickSEG?style=social)
+
+
