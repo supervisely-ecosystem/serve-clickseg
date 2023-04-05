@@ -31,7 +31,9 @@ Application key points:
 
 ClickSeg Interactive segmentation algorithms allow users to explicitly control the predictions using interactive input at several iterations, in contrast to common semantic and instance segmentation algorithms that can only input an image and output a segmentation mask in one pass. Such interaction makes it possible to select an object of interest and correct prediction errors.
 
-<img src="https://user-images.githubusercontent.com/115161827/229972031-fdf2d0a4-b919-4bd8-88b1-99e284c82e26.gif"/>
+<p align="center">
+<img src="https://user-images.githubusercontent.com/115161827/229972031-fdf2d0a4-b919-4bd8-88b1-99e284c82e26.gif" width="900"/>
+</p>
 
 Besides segmenting new objects, proposed method allows to correct external masks, e.g. produced by other
 instance or semantic segmentation models. A user can fix false negative and false positive regions with positive (green)
@@ -348,11 +350,13 @@ Iterative Training: Yes
 
 ## How to Run
 
-1. Start the application from Ecosystem
+1. Start the application from Ecosystem.
 
-<img src="xxx" />
+<p align="center">
+<img src="https://user-images.githubusercontent.com/115161827/229979147-ba78163b-2a0f-49c4-99ad-58b6855b98ab.gif" width="900"/>
+</p>
 
-2. Select the pretrained model and deploy it on your device by clicking `Serve` button
+2. Select the pretrained model and deploy it on your device by clicking `Serve` button.
 
 <img src="https://user-images.githubusercontent.com/115161827/229956100-ae83590b-4c6a-4015-b217-345b51003ee5.png" />
 
