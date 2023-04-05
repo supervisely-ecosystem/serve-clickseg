@@ -107,9 +107,9 @@ else:
     # debug
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("Using device:", device)
-    m = ClickSegModel(use_gui=True, custom_inference_settings=inference_settings_path)
-    m.gui._models_table.select_row(ClickSegModel.DEFAULT_ROW_IDX)
-    # m.load_on_device(m.model_dir, device)
+    m = ClickSegModel(use_gui=False, custom_inference_settings=inference_settings_path)
+    # m.gui._models_table.select_row(ClickSegModel.DEFAULT_ROW_IDX)
+    m.load_on_device(m.model_dir, device)
     if os.environ.get("DEBUG_WITH_SLY_NET"):
         print("mode=DEBUG_WITH_SLY_NET")
         m.serve()
