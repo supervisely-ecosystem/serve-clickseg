@@ -24,5 +24,8 @@
   "task_location": "application_sessions",
   "icon": "https://user-images.githubusercontent.com/119248312/229955883-44f45ebd-6389-4039-b446-c38d45592682.png",
   "icon_cover": true,
-  "poster": "https://user-images.githubusercontent.com/119248312/229955889-0f66e61d-4590-4e20-b56b-81ae6ea9dbcd.jpg"
+  "poster": "https://user-images.githubusercontent.com/119248312/229955889-0f66e61d-4590-4e20-b56b-81ae6ea9dbcd.jpg",
+  "license": {
+    "type": "Apache-2.0" 
+  }
 }
