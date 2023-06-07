@@ -15,6 +15,7 @@
     "sly_smart_annotation"
   ],
   "need_gpu": false,
+  "gpu": "preferred",
   "community_agent": false,
   "min_agent_version": "6.7.17",
   "docker_image": "supervisely/serve-clickseg:1.0.0",
