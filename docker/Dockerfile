@@ -19,4 +19,4 @@ RUN pip3 install \
     thop \
     gdown
 
-RUN pip3 install supervisely==6.72.136
+RUN pip3 install supervisely==6.72.137
