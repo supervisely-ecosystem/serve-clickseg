@@ -4,8 +4,8 @@ from typing import List
 
 sys.path.append("ClickSEG")
 from ClickSEG.isegm.inference.predictors import get_predictor, FocalPredictor
-from ClickSEG.isegm.inference.evaluation import Progressive_Merge
-from ClickSEG.isegm.inference.transforms import ZoomIn
+
+# from ClickSEG.isegm.inference.transforms import ZoomIn
 from ClickSEG.isegm.inference import utils, clicker
 
 import numpy as np
@@ -13,26 +13,7 @@ import cv2
 import torch
 import gdown
 
-from src.model_zoo import get_model_zoo
-from supervisely.nn.inference import InteractiveSegmentation
-
-
-class UserClicker:
-    def __init__(self):
-        self.clicks_list = []
-
-    def get_clicks(self, clicks_limit=None) -> List[clicker.Click]:
-        return self.clicks_list[:clicks_limit]
-
-    def add_click(self, x, y, is_positive):
-        self.clicks_list.append(clicker.Click(is_positive, [y, x], indx=len(self.clicks_list)))
-
-    def add_clicks(self, clicks: List[InteractiveSegmentation.Click]):
-        for click in clicks:
-            self.add_click(click.x, click.y, click.is_positive)
-
-    def reset(self):
-        self.clicks_list = []
+from src.clicker import UserClicker, IterativeUserClicker
 
 
 def download_weights(url, output_path):
@@ -94,11 +75,30 @@ def set_prob_thres(prob_thresh, predictor):
         # only for BRS modes
         predictor.opt_functor.prob_thresh = prob_thresh
 
+    from isegm.inference.transforms import ZoomIn
+
     if hasattr(predictor, "transforms"):
         for t in predictor.transforms:
             if isinstance(t, ZoomIn):
-                print("set_ZoomIn")
                 t.prob_thresh = prob_thresh
+
+
+def set_inference_parameters(predictor: FocalPredictor, params: dict):
+    conf_thres = params["conf_thres"]
+    inference_resolution = params["inference_resolution"]
+    focus_crop_r = params["focus_crop_r"]
+    target_size = params["target_size"]
+    predictor.crop_l = inference_resolution
+    predictor.focus_crop_r = focus_crop_r
+
+    from isegm.inference.transforms import ZoomIn
+
+    if hasattr(predictor, "transforms") and isinstance(predictor.transforms[0], ZoomIn):
+        zoom_in = predictor.transforms[0]
+        zoom_in.target_size = target_size
+        zoom_in.prob_thresh = conf_thres
+    else:
+        raise Exception("ZoomIn not found in predictor.transforms[0].")
 
 
 def load_image(image_path):
@@ -117,27 +117,125 @@ def set_prev_mask(mask: np.ndarray, predictor: FocalPredictor):
     predictor.set_prev_mask(mask)
 
 
+def Progressive_Merge_v2(pred_mask, previous_mask, y, x, is_positive):
+    corr_mask = np.zeros_like(previous_mask)
+    if is_positive:
+        num, labels = cv2.connectedComponents(pred_mask.astype(np.uint8))
+        label = labels[y, x]
+        if label != 0:
+            corr_mask = labels == label
+            progressive_mask = np.logical_or(previous_mask, corr_mask)
+        else:
+            progressive_mask = previous_mask
+    else:
+        diff = np.logical_and(previous_mask, np.logical_not(pred_mask))
+        num, labels = cv2.connectedComponents(diff.astype(np.uint8))
+        label = labels[y, x]
+        if label != 0:
+            corr_mask = labels == label
+            progressive_mask = np.logical_and(previous_mask, np.logical_not(corr_mask))
+        else:
+            progressive_mask = previous_mask
+
+    # Debug
+    # if True:
+    #     import supervisely as sly
+
+    #     sly.image.write("previous_mask.jpg", previous_mask * 255)
+    #     sly.image.write("pred_mask.jpg", pred_mask * 255)
+    #     # sly.image.write("diff_regions.jpg", diff_regions*255)
+    #     sly.image.write("corr_mask.jpg", corr_mask * 255)
+    #     sly.image.write("progressive_mask.jpg", progressive_mask * 255)
+
+    #     grid = np.concatenate([previous_mask, pred_mask, corr_mask, progressive_mask], 1)
+    #     sly.image.write("grid.png", grid * 255)
+
+    return progressive_mask
+
+
 @torch.no_grad()
 def inference_step(
     image: np.ndarray,
     predictor: FocalPredictor,
     clicker: UserClicker,
     pred_thr=0.49,
-    progressive_mode=False,
+    progressive_merge=False,
+    init_mask=None,
 ) -> np.ndarray:
-    # image: [H,W,C]
-    h, w, c = image.shape
+    # Set up inputs
+    predictor.set_input_image(image)
+    if init_mask is not None:
+        predictor.set_prev_mask(init_mask)
+        pred_mask = init_mask
+        prev_mask = init_mask
+        predictor.transforms[0]._prev_probs = np.expand_dims(np.expand_dims(pred_mask, 0), 0)
 
     # Inference
     pred_probs = predictor.get_prediction(clicker)  # np.array: [H,W]
     pred_mask = pred_probs > pred_thr
 
-    # Merge with prev_mask
-    if progressive_mode and len(clicker.get_clicks()) > 0:
-        prev_mask = predictor.prev_prediction.clone().squeeze().cpu().numpy()
+    # Post-processing
+    if progressive_merge:
         last_click = clicker.get_clicks()[-1]
         last_y, last_x = last_click.coords[0], last_click.coords[1]
-        pred_mask = Progressive_Merge(pred_mask, prev_mask, last_y, last_x)
+        pred_mask = Progressive_Merge_v2(
+            pred_mask, prev_mask, last_y, last_x, is_positive=last_click.is_positive
+        )
         predictor.transforms[0]._prev_probs = np.expand_dims(np.expand_dims(pred_mask, 0), 0)
 
     return pred_mask, pred_probs
+
+
+@torch.no_grad()
+def iterative_inference(
+    image: np.ndarray,
+    predictor: FocalPredictor,
+    clicker: IterativeUserClicker,
+    pred_thr=0.49,
+    progressive_merge=False,
+    init_mask=None,
+) -> np.ndarray:
+    # Set up inputs
+    prev_mask = np.zeros_like(image[..., 0])
+    predictor.set_input_image(image)
+    if init_mask is not None:
+        predictor.set_prev_mask(init_mask)
+        pred_mask = init_mask
+        prev_mask = init_mask
+        predictor.transforms[0]._prev_probs = np.expand_dims(np.expand_dims(pred_mask, 0), 0)
+
+    # Inference
+    for click_indx in range(len(clicker.all_clicks)):
+        clicker.make_next_click()
+        pred_probs = predictor.get_prediction(clicker)
+        pred_mask = pred_probs > pred_thr
+
+        # Post-processing
+        if progressive_merge:
+            last_click = clicker.get_clicks()[-1]
+            last_y, last_x = last_click.coords[0], last_click.coords[1]
+            pred_mask = Progressive_Merge_v2(
+                pred_mask, prev_mask, last_y, last_x, is_positive=last_click.is_positive
+            )
+            predictor.transforms[0]._prev_probs = np.expand_dims(np.expand_dims(pred_mask, 0), 0)
+
+        prev_mask = pred_mask
+
+        # debug
+        # if True:
+        #     import supervisely as sly
+        #     vis_pred = np.repeat((pred_probs*255).astype(np.uint8)[...,None], 3, axis=2)
+        #     vis_pred = draw_rois(vis_pred, predictor.focus_roi, predictor.global_roi)
+        #     sly.image.write(f'test_{click_indx}.png', vis_pred)
+
+    return pred_mask, pred_probs
+
+
+def draw_rois(pred_probs, focus_roi, global_roi):
+    focus_roi_x = focus_roi[::2][::-1]
+    focus_roi_y = focus_roi[1::2][::-1]
+    global_roi_x = global_roi[::2][::-1]
+    global_roi_y = global_roi[1::2][::-1]
+    pred_probs = cv2.rectangle(pred_probs, focus_roi_x, focus_roi_y, [0, 255, 0], 5)
+    pred_probs = cv2.rectangle(pred_probs, global_roi_x, global_roi_y, [255, 0, 0], 4)
+    return pred_probs
