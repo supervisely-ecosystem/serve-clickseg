@@ -1,6 +1,6 @@
 --extra-index-url https://download.pytorch.org/whl/lts/1.8/cu111
 
-git+https://github.com/supervisely/supervisely.git@noninteractive-mode
+git+https://github.com/supervisely/supervisely.git@autostart-hotfix
 # supervisely==6.72.143
 
 torch==1.8.2
