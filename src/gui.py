@@ -8,6 +8,7 @@ except ImportError:
 from supervisely.nn.inference.gui import InferenceGUI
 from supervisely.app import widgets
 from supervisely import Api
+from supervisely import logger
 
 
 class ClickSegGUI(InferenceGUI):
@@ -34,14 +35,14 @@ class ClickSegGUI(InferenceGUI):
         self._content = widgets.Container(
             [
                 self._tabs,
-                self._inference_parameters_card,
                 self._device_field,
                 self._download_progress,
                 self._success_label,
                 self._serve_button,
                 self._change_model_button,
+                self._inference_parameters_card,
             ],
-            gap=3,
+            gap=5,
         )
 
     def get_ui(self):
@@ -72,18 +73,37 @@ class ClickSegGUI(InferenceGUI):
             "Inference Resolution",
             "An image will be resized to this resolution before running through the model.",
         )
-        self.focus_crop_r_input = widgets.InputNumber(1.4, 0.0, 3.0, step=0.2)
+        self.focus_crop_r_input = widgets.InputNumber(1.4, 0.0, 5.0, step=0.2)
         focus_crop_r_input_f = widgets.Field(
             self.focus_crop_r_input,
             "Focus Crop Ratio",
             "",
         )
-        self.target_size_input = widgets.InputNumber(600, 0.0, step=100)
-        target_size_input_f = widgets.Field(
-            self.target_size_input,
-            "Target Size",
+        self.target_crop_r_input = widgets.InputNumber(1.4, 0.0, 5.0, step=0.2)
+        target_crop_r_input_f = widgets.Field(
+            self.target_crop_r_input,
+            "Target Crop Ratio",
             "",
         )
+        info = widgets.NotificationBox(
+            'Please, click the "Apply" button to update the model\'s settings.'
+        )
+        self.refine_mode = widgets.Switch(True)
+        refine_mode_f = widgets.Field(
+            self.refine_mode,
+            "Refine Mode",
+            "",
+        )
+
+        self.apply_btn = widgets.Button("Apply")
+
+        @self.apply_btn.click
+        def on_click():
+            # Does nothing. It's a workaround to save the state in UI.
+            logger.info(
+                "Inference settings have been updated:", extra=self.get_inference_parameters()
+            )
+
         content = widgets.Container(
             [
                 iterative_mode_switch_f,
@@ -91,7 +111,10 @@ class ClickSegGUI(InferenceGUI):
                 conf_thres_input_f,
                 inference_resolution_input_f,
                 focus_crop_r_input_f,
-                target_size_input_f,
+                target_crop_r_input_f,
+                refine_mode_f,
+                info,
+                self.apply_btn,
             ]
         )
         return widgets.Card("Inference Parameters", content=content)
@@ -103,6 +126,7 @@ class ClickSegGUI(InferenceGUI):
             conf_thres=self.conf_thres_input.get_value(),
             inference_resolution=self.inference_resolution_input.get_value(),
             focus_crop_r=self.focus_crop_r_input.get_value(),
-            target_size=self.target_size_input.get_value(),
+            target_crop_r=self.target_crop_r_input.get_value(),
+            refine_mode=self.refine_mode.is_switched()
         )
         return params

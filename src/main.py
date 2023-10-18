@@ -1,7 +1,8 @@
 import os
+from typing_extensions import Literal
 import torch
 from pathlib import Path
-import time
+from cachetools import LRUCache
 
 import supervisely as sly
 from dotenv import load_dotenv
@@ -11,7 +12,7 @@ try:
 except ImportError:
     # for compatibility with python 3.7
     from typing_extensions import Literal
-from typing import List, Any, Dict
+from typing import List, Any, Dict, Literal, Optional, Union
 
 from supervisely.nn.inference import InteractiveSegmentation
 from supervisely.nn.prediction_dto import PredictionSegmentation
@@ -19,7 +20,7 @@ from supervisely.nn.prediction_dto import PredictionSegmentation
 from src.model_zoo import get_model_zoo
 from src import clickseg_api
 
-# from src.gui import ClickSegGUI
+from src.gui import ClickSegGUI
 from src.clicker import IterativeUserClicker, UserClicker
 
 
@@ -47,14 +48,17 @@ class ClickSegModel(InteractiveSegmentation):
         self.model_info = model_info
         self.device = device
 
-        sly.logger.info(f"Downloading model {self.model_name}...")
-        weights_path = os.path.join(model_dir, f"{self.model_name}.pth")
-        pbar = self._gui.download_progress(
-            message=f"Downloading model {self.model_name}...", total=1
-        )
-        res = clickseg_api.download_weights(model_info["weights_url"], weights_path)
-        pbar.update(1)
-        assert res is not None, f"Can't download model weights {model_info['weights_url']}"
+        if os.path.exists(f"/checkpoints/{self.model_name}.pth"):
+            weights_path = f"/checkpoints/{self.model_name}.pth"
+        else:
+            sly.logger.info(f"Downloading model {self.model_name}...")
+            weights_path = os.path.join(model_dir, f"{self.model_name}.pth")
+            pbar = self._gui.download_progress(
+                message=f"Downloading model {self.model_name}...", total=1
+            )
+            res = clickseg_api.download_weights(model_info["weights_url"], weights_path)
+            pbar.update(1)
+            assert res is not None, f"Can't download model weights {model_info['weights_url']}"
 
         sly.logger.info(f"Building model {self.model_name}...")
         self.predictor = clickseg_api.load_model(model_info, weights_path, self.device)
@@ -66,22 +70,20 @@ class ClickSegModel(InteractiveSegmentation):
         clicks: List[InteractiveSegmentation.Click],
         settings: Dict[str, Any],
     ) -> PredictionSegmentation:
+        # Load image
+        img = clickseg_api.load_image(image_path)
+
         # Set inference parameters
+        init_mask = settings["init_mask"]
         params = self._gui.get_inference_parameters()
+        if init_mask is not None:
+            params["iterative_mode"] = True
         iterative_mode = params["iterative_mode"]
         progressive_merge = params["progressive_merge"]
         conf_thres = params["conf_thres"]
         clickseg_api.set_inference_parameters(self.predictor, params)
 
-        # Load image
-        img = clickseg_api.load_image(image_path)
-
-        # Load init_mask
-        init_mask = None
-        # init_mask = self.get_mask(settings["image_id"], settings["crop"])
-        # assert init_mask.shape[:2] == img.shape[:2]
-
-        t0 = time.time()
+        # Inference
         if iterative_mode:
             # Init clicker
             clicker = IterativeUserClicker()
@@ -109,16 +111,16 @@ class ClickSegModel(InteractiveSegmentation):
                 init_mask=init_mask,
             )
 
-        dt = round(time.time() - t0, 2)
-        print(f"Inference in {dt} seconds.")
-
         res = PredictionSegmentation(mask=pred_mask)
 
         # debug
-        if os.environ.get("DEBUG_WITH_SLY_NET"):
+        if sly.is_debug_with_sly_net():
             sly.image.write("crop.jpg", img)
             sly.image.write("pred.jpg", pred_mask * 255)
             sly.image.write("pred_probs.jpg", pred_probs * 255)
+            sly.fs.silent_remove("init_mask.png")
+            if init_mask is not None:
+                sly.image.write("init_mask.png", init_mask)
         return res
 
     def get_models(self):
@@ -137,37 +139,18 @@ class ClickSegModel(InteractiveSegmentation):
     def support_custom_models(self):
         return False
 
-    def get_mask(self, image_id, crop):
-        # DEBUG
-        import numpy as np
-        from supervisely.nn.inference.interactive_segmentation.functional import crop_image
-
-        ann = self.api.annotation.download_json(image_id)
-        h, w = ann["size"]["height"], ann["size"]["width"]
-
-        # find label
-        for label in ann["objects"]:
-            if label["classId"] == 8892584:
-                bitmap = sly.Bitmap.from_json(label)
-                break
-        mask = np.zeros((h, w), bool)
-        bitmap.to_bbox().get_cropped_numpy_slice(mask)[:] = bitmap.data
-        mask = crop_image(crop, mask)
-        mask = (mask * 255).astype(np.uint8)
-        return mask
-
-    # def initialize_gui(self) -> None:
-    #     models = self.get_models()
-    #     support_pretrained_models = True
-    #     self._gui = ClickSegGUI(
-    #         models,
-    #         self.api,
-    #         support_pretrained_models=support_pretrained_models,
-    #         support_custom_models=self.support_custom_models(),
-    #         add_content_to_pretrained_tab=self.add_content_to_pretrained_tab,
-    #         add_content_to_custom_tab=self.add_content_to_custom_tab,
-    #         custom_model_link_type=self.get_custom_model_link_type(),
-    #     )
+    def initialize_gui(self) -> None:
+        models = self.get_models()
+        support_pretrained_models = True
+        self._gui = ClickSegGUI(
+            models,
+            self.api,
+            support_pretrained_models=support_pretrained_models,
+            support_custom_models=self.support_custom_models(),
+            add_content_to_pretrained_tab=self.add_content_to_pretrained_tab,
+            add_content_to_custom_tab=self.add_content_to_custom_tab,
+            custom_model_link_type=self.get_custom_model_link_type(),
+        )
 
 
 # inference_settings_path = os.path.join(root_source_path, "custom_settings.yaml")
@@ -183,7 +166,7 @@ else:
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("Using device:", device)
     m = ClickSegModel(use_gui=True, custom_inference_settings=inference_settings_path)
-    # m.gui._models_table.select_row(ClickSegModel.DEFAULT_ROW_IDX)
+    m.gui._models_table.select_row(ClickSegModel.DEFAULT_ROW_IDX)
     # m.load_on_device(m.model_dir, device)
     if os.environ.get("DEBUG_WITH_SLY_NET"):
         print("mode=DEBUG_WITH_SLY_NET")

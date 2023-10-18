@@ -1,6 +1,5 @@
 import os
 import sys
-from typing import List
 
 sys.path.append("ClickSEG")
 from ClickSEG.isegm.inference.predictors import get_predictor, FocalPredictor
@@ -28,7 +27,7 @@ def load_model(model_info, weights_path, device):
     mode = "FocalClick"  # ['CDNet', 'Baseline', 'FocalClick']
     net_clicks_limit = 100
     infer_size = 384
-    thresh = 0.55
+    thresh = 0.5
     focus_crop_r = 1.4
     target_size = 600
     target_crop_r = 1.4
@@ -87,18 +86,23 @@ def set_inference_parameters(predictor: FocalPredictor, params: dict):
     conf_thres = params["conf_thres"]
     inference_resolution = params["inference_resolution"]
     focus_crop_r = params["focus_crop_r"]
-    target_size = params["target_size"]
+    target_crop_r = params["target_crop_r"]
+    # target_size = params["target_size"]
     predictor.crop_l = inference_resolution
     predictor.focus_crop_r = focus_crop_r
+    predictor.refine_mode = params["refine_mode"]
 
-    from isegm.inference.transforms import ZoomIn
+    from isegm.inference.transforms import ZoomIn, ResizeTrans
 
-    if hasattr(predictor, "transforms") and isinstance(predictor.transforms[0], ZoomIn):
-        zoom_in = predictor.transforms[0]
-        zoom_in.target_size = target_size
-        zoom_in.prob_thresh = conf_thres
-    else:
-        raise Exception("ZoomIn not found in predictor.transforms[0].")
+    for transform in predictor.transforms:
+        if isinstance(transform, ZoomIn):
+            zoom_in = transform
+            # zoom_in.target_size = target_size
+            # zoom_in.prob_thresh = conf_thres
+            zoom_in.expansion_ratio = target_crop_r
+        elif isinstance(transform, ResizeTrans):
+            transform.crop_height = inference_resolution
+            transform.crop_width = inference_resolution
 
 
 def load_image(image_path):
@@ -163,6 +167,7 @@ def inference_step(
     init_mask=None,
 ) -> np.ndarray:
     # Set up inputs
+    prev_mask = np.zeros_like(image[..., 0])
     predictor.set_input_image(image)
     if init_mask is not None:
         predictor.set_prev_mask(init_mask)
@@ -175,13 +180,13 @@ def inference_step(
     pred_mask = pred_probs > pred_thr
 
     # Post-processing
-    if progressive_merge:
-        last_click = clicker.get_clicks()[-1]
-        last_y, last_x = last_click.coords[0], last_click.coords[1]
-        pred_mask = Progressive_Merge_v2(
-            pred_mask, prev_mask, last_y, last_x, is_positive=last_click.is_positive
-        )
-        predictor.transforms[0]._prev_probs = np.expand_dims(np.expand_dims(pred_mask, 0), 0)
+    # if progressive_merge:
+    #     last_click = clicker.get_clicks()[-1]
+    #     last_y, last_x = last_click.coords[0], last_click.coords[1]
+    #     pred_mask = Progressive_Merge_v2(
+    #         pred_mask, prev_mask, last_y, last_x, is_positive=last_click.is_positive
+    #     )
+    #     predictor.transforms[0]._prev_probs = np.expand_dims(np.expand_dims(pred_mask, 0), 0)
 
     return pred_mask, pred_probs
 
@@ -224,9 +229,10 @@ def iterative_inference(
         # debug
         # if True:
         #     import supervisely as sly
-        #     vis_pred = np.repeat((pred_probs*255).astype(np.uint8)[...,None], 3, axis=2)
+
+        #     vis_pred = np.repeat((pred_probs * 255).astype(np.uint8)[..., None], 3, axis=2)
         #     vis_pred = draw_rois(vis_pred, predictor.focus_roi, predictor.global_roi)
-        #     sly.image.write(f'test_{click_indx}.png', vis_pred)
+        #     sly.image.write(f"test_{click_indx}.png", vis_pred)
 
     return pred_mask, pred_probs
 
