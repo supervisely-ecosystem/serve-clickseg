@@ -24,9 +24,9 @@ from src.gui import ClickSegGUI
 from src.clicker import IterativeUserClicker, UserClicker
 
 
-load_dotenv("local.env")
-load_dotenv(os.path.expanduser("~/supervisely.env"))
-root_source_path = str(Path(__file__).parents[1])
+if sly.is_development():
+    load_dotenv("local.env")
+    load_dotenv(os.path.expanduser("~/supervisely.env"))
 
 
 class ClickSegModel(InteractiveSegmentation):
