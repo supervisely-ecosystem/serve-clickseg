@@ -42,45 +42,15 @@ def evaluate_dataset(dataset, predictor, vis = True, vis_path = './experiments/v
 
     return all_ious, elapsed_time
 
-def Progressive_Merge(pred_mask, previous_mask, y, x, is_positive=None):
-    corr_mask = np.zeros_like(previous_mask)
-    if is_positive:
-        num, labels = cv2.connectedComponents(pred_mask.astype(np.uint8))
-        label = labels[y,x]
-        if label != 0:
-            corr_mask = labels == label
-            progressive_mask = np.logical_or(previous_mask, corr_mask)
-        else:
-            progressive_mask = previous_mask
+def Progressive_Merge(pred_mask, previous_mask, y, x):
+    diff_regions = np.logical_xor(previous_mask, pred_mask)
+    num, labels = cv2.connectedComponents(diff_regions.astype(np.uint8))
+    label = labels[y,x]
+    corr_mask = labels == label
+    if previous_mask[y,x] == 1:
+        progressive_mask = np.logical_and( previous_mask, np.logical_not(corr_mask))
     else:
-        diff = np.logical_and(previous_mask, np.logical_not(pred_mask))
-        num, labels = cv2.connectedComponents(diff.astype(np.uint8))
-        label = labels[y,x]
-        if label != 0:
-            corr_mask = labels == label
-            progressive_mask = np.logical_and(previous_mask, np.logical_not(corr_mask))
-        else:
-            progressive_mask = previous_mask
-
-    # diff_regions = np.logical_xor(previous_mask, pred_mask)
-    # num, labels = cv2.connectedComponents(diff_regions.astype(np.uint8))
-    # label = labels[y,x]
-    # corr_mask = labels == label
-    # if not is_positive:
-    #     progressive_mask = np.logical_and( previous_mask, np.logical_not(corr_mask))
-    # else:
-    #     progressive_mask = np.logical_or( previous_mask, corr_mask)
-
-    import supervisely as sly
-    sly.image.write("previous_mask.jpg", previous_mask*255)
-    sly.image.write("pred_mask.jpg", pred_mask*255)
-    # sly.image.write("diff_regions.jpg", diff_regions*255)
-    sly.image.write("corr_mask.jpg", corr_mask*255)
-    sly.image.write("progressive_mask.jpg", progressive_mask*255)
-
-    grid = np.concatenate([previous_mask, pred_mask, corr_mask, progressive_mask], 1)
-    sly.image.write("grid.png", grid*255)
-
+        progressive_mask = np.logical_or( previous_mask, corr_mask)
     return progressive_mask
 
 
