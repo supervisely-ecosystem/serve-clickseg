@@ -13,6 +13,7 @@ class FocalPredictor(object):
                  max_size=None,
                  infer_size = 256,
                  focus_crop_r = 1.4,
+                 refine_mode = True,
                  **kwargs):
         self.with_flip = with_flip
         self.net_clicks_limit = net_clicks_limit
@@ -23,6 +24,7 @@ class FocalPredictor(object):
         self.model_indx = 0
         self.click_models = None
         self.net_state_dict = None
+        self.refine_mode = refine_mode
 
         if isinstance(model, tuple):
             self.net, self.click_models = model
@@ -109,24 +111,26 @@ class FocalPredictor(object):
         coarse_mask_np = coarse_mask.cpu().numpy()[0, 0] 
         prev_mask_np = prev_mask.cpu().numpy()[0, 0] 
 
-        # === Ablation Studies for Different Strategies of Focus Crop
-        y1,y2,x1,x2 = get_focus_cropv1(coarse_mask_np,prev_mask_np, global_roi,last_y,last_x, self.focus_crop_r)
-        #y1,y2,x1,x2 = get_focus_cropv1(coarse_mask_np,prev_mask_np, global_roi,last_y,last_x, 1.2)
-        #y1,y2,x1,x2 = get_focus_cropv1(coarse_mask_np,prev_mask_np, global_roi,last_y,last_x, 1.6)
-        #y1,y2,x1,x2 = get_focus_cropv2(coarse_mask_np,prev_mask_np, global_roi,last_y,last_x, 1.4)
-        #y1,y2,x1,x2 = get_object_crop(coarse_mask_np,prev_mask_np, global_roi,last_y,last_x, 1.4)
-        #y1,y2,x1,x2 = get_click_crop(coarse_mask_np,prev_mask_np, global_roi,last_y,last_x, 1.4)
-        
-        focus_roi = (y1,y2,x1,x2)
-        self.focus_roi = focus_roi
-        focus_roi_in_global_roi = self.mapp_roi(focus_roi, global_roi)
-        focus_pred = self._get_refine(pred_logits,image_full,clicks_list, feature, focus_roi, focus_roi_in_global_roi)#.cpu().numpy()[0, 0]
-        focus_pred = F.interpolate(focus_pred,(y2-y1,x2-x1),mode='bilinear',align_corners=True)#.cpu().numpy()[0, 0]
-        
-        if len(clicks_list) > 10:
-            coarse_mask = self.prev_prediction
-            coarse_mask  = torch.log( coarse_mask/(1-coarse_mask)  )
-        coarse_mask[:,:,y1:y2,x1:x2] =  focus_pred
+        if self.refine_mode:
+            # === Ablation Studies for Different Strategies of Focus Crop
+            y1,y2,x1,x2 = get_focus_cropv1(coarse_mask_np,prev_mask_np, global_roi,last_y,last_x, self.focus_crop_r)
+            #y1,y2,x1,x2 = get_focus_cropv1(coarse_mask_np,prev_mask_np, global_roi,last_y,last_x, 1.2)
+            #y1,y2,x1,x2 = get_focus_cropv1(coarse_mask_np,prev_mask_np, global_roi,last_y,last_x, 1.6)
+            #y1,y2,x1,x2 = get_focus_cropv2(coarse_mask_np,prev_mask_np, global_roi,last_y,last_x, 1.4)
+            #y1,y2,x1,x2 = get_object_crop(coarse_mask_np,prev_mask_np, global_roi,last_y,last_x, 1.4)
+            #y1,y2,x1,x2 = get_click_crop(coarse_mask_np,prev_mask_np, global_roi,last_y,last_x, 1.4)
+            
+            focus_roi = (y1,y2,x1,x2)
+            self.focus_roi = focus_roi
+            focus_roi_in_global_roi = self.mapp_roi(focus_roi, global_roi)
+            focus_pred = self._get_refine(pred_logits,image_full,clicks_list, feature, focus_roi, focus_roi_in_global_roi)#.cpu().numpy()[0, 0]
+            focus_pred = F.interpolate(focus_pred,(y2-y1,x2-x1),mode='bilinear',align_corners=True)#.cpu().numpy()[0, 0]
+            
+            if len(clicks_list) > 10:
+                coarse_mask = self.prev_prediction
+                coarse_mask  = torch.log( coarse_mask/(1-coarse_mask)  )
+            coarse_mask[:,:,y1:y2,x1:x2] =  focus_pred
+            
         coarse_mask = torch.sigmoid(coarse_mask)
         
         self.prev_prediction = coarse_mask

@@ -45,7 +45,7 @@ for i, model_info in enumerate(get_model_zoo()):
     clickseg_api.set_prob_thres(conf_thres, predictor)
     t0 = time.time()
     pred_mask, pred_probs = clickseg_api.inference_step(
-        img, predictor, clicker, pred_thr=conf_thres, progressive_mode=False
+        img, predictor, clicker, pred_thr=conf_thres, progressive_merge=False
     )
     print(f"in {time.time()-t0:.2f} sec")
 
