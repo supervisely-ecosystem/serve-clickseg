@@ -12,6 +12,16 @@ from supervisely import logger
 
 
 class ClickSegGUI(InferenceGUI):
+    DEFAULT_PARAMS = dict(
+            iterative_mode=False,
+            progressive_merge=False,
+            conf_thres=0.5,
+            inference_resolution=384,
+            focus_crop_r=1.4,
+            target_crop_r=1.4,
+            refine_mode=True
+        )
+    
     def __init__(
         self,
         models: Union[List[Dict[str, str]], Dict[str, List[Dict[str, str]]]],
@@ -120,13 +130,21 @@ class ClickSegGUI(InferenceGUI):
         return widgets.Card("Inference Parameters", content=content)
 
     def get_inference_parameters(self):
-        params = dict(
-            iterative_mode=self.iterative_mode_switch.is_switched(),
-            progressive_merge=self.progressive_merge_switch.is_switched(),
-            conf_thres=self.conf_thres_input.get_value(),
-            inference_resolution=self.inference_resolution_input.get_value(),
-            focus_crop_r=self.focus_crop_r_input.get_value(),
-            target_crop_r=self.target_crop_r_input.get_value(),
-            refine_mode=self.refine_mode.is_switched()
-        )
+        try:
+            params = dict(
+                iterative_mode=self.iterative_mode_switch.is_switched(),
+                progressive_merge=self.progressive_merge_switch.is_switched(),
+                conf_thres=self.conf_thres_input.get_value(),
+                inference_resolution=self.inference_resolution_input.get_value(),
+                focus_crop_r=self.focus_crop_r_input.get_value(),
+                target_crop_r=self.target_crop_r_input.get_value(),
+                refine_mode=self.refine_mode.is_switched()
+            )
+            self._inference_parameters_card.unlock()
+        except KeyError as exc:
+            # Hotfix for: https://github.com/supervisely/issues/issues/3618
+            params = self.DEFAULT_PARAMS.copy()
+            logger.warn("Something went wrong in UI. Please, restart the App.", exc_info=exc)
+            self._inference_parameters_card.lock("Something went wrong in UI. Please, restart the App.")
+
         return params
