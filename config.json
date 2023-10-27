@@ -15,7 +15,7 @@
     "sly_smart_annotation"
   ],
   "modal_template_state": {
-    "autostart": true,
+    "autostart": true
   },
   "need_gpu": false,
   "gpu": "preferred",
