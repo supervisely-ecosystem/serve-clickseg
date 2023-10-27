@@ -28,5 +28,8 @@
   "poster": "https://user-images.githubusercontent.com/119248312/229955889-0f66e61d-4590-4e20-b56b-81ae6ea9dbcd.jpg",
   "license": {
     "type": "Apache-2.0" 
+  },
+  "modal_template_state": {
+    "autostart": true
   }
 }
