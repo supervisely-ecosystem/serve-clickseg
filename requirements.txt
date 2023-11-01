@@ -1,4 +1,4 @@
-supervisely==6.72.165
+supervisely==6.72.170
 
 # --extra-index-url https://download.pytorch.org/whl/lts/1.8/cu111
 # torch==1.8.2
