@@ -13,15 +13,15 @@ from supervisely import logger
 
 class ClickSegGUI(InferenceGUI):
     DEFAULT_PARAMS = dict(
-            iterative_mode=False,
-            progressive_merge=False,
-            conf_thres=0.5,
-            inference_resolution=384,
-            focus_crop_r=1.4,
-            target_crop_r=1.4,
-            refine_mode=True
-        )
-    
+        iterative_mode=False,
+        progressive_merge=False,
+        conf_thres=0.5,
+        inference_resolution=384,
+        focus_crop_r=1.4,
+        target_crop_r=1.4,
+        refine_mode=True,
+    )
+
     def __init__(
         self,
         models: Union[List[Dict[str, str]], Dict[str, List[Dict[str, str]]]],
@@ -42,21 +42,22 @@ class ClickSegGUI(InferenceGUI):
             custom_model_link_type=custom_model_link_type,
         )
         self._inference_parameters_card = self._create_inference_parameters_card()
-        self._content = widgets.Container(
-            [
-                self._tabs,
-                self._device_field,
-                self._download_progress,
-                self._success_label,
-                self._serve_button,
-                self._change_model_button,
-                self._inference_parameters_card,
-            ],
-            gap=5,
-        )
+        # self.add_content_to_default_ui(self._inference_parameters_card)
+        # self._content = widgets.Container(
+        #     [
+        #         self._tabs,
+        #         self._device_field,
+        #         self._download_progress,
+        #         self._success_label,
+        #         self._serve_button,
+        #         self._change_model_button,
+        #         self._inference_parameters_card,
+        #     ],
+        #     gap=5,
+        # )
 
-    def get_ui(self):
-        return self._content
+    # def get_ui(self):
+    #     return self._content
 
     def _create_inference_parameters_card(self):
         self.iterative_mode_switch = widgets.Switch()
@@ -138,13 +139,15 @@ class ClickSegGUI(InferenceGUI):
                 inference_resolution=self.inference_resolution_input.get_value(),
                 focus_crop_r=self.focus_crop_r_input.get_value(),
                 target_crop_r=self.target_crop_r_input.get_value(),
-                refine_mode=self.refine_mode.is_switched()
+                refine_mode=self.refine_mode.is_switched(),
             )
             self._inference_parameters_card.unlock()
         except KeyError as exc:
             # Hotfix for: https://github.com/supervisely/issues/issues/3618
             params = self.DEFAULT_PARAMS.copy()
             logger.warn("Something went wrong in UI. Please, restart the App.", exc_info=exc)
-            self._inference_parameters_card.lock("Something went wrong in UI. Please, restart the App.")
+            self._inference_parameters_card.lock(
+                "Something went wrong in UI. Please, restart the App."
+            )
 
         return params
