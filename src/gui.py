@@ -6,9 +6,10 @@ except ImportError:
     from typing_extensions import Literal
 
 from supervisely.nn.inference.gui import InferenceGUI
-from supervisely.app import widgets
+from supervisely.app import widgets, StateJson
 from supervisely import Api
 from supervisely import logger
+from supervisely.io.env import autostart
 
 
 class ClickSegGUI(InferenceGUI):
@@ -42,7 +43,7 @@ class ClickSegGUI(InferenceGUI):
             custom_model_link_type=custom_model_link_type,
         )
         self._inference_parameters_card = self._create_inference_parameters_card()
-        # self.add_content_to_default_ui(self._inference_parameters_card)
+        self.add_content_to_default_ui(self._inference_parameters_card)
         # self._content = widgets.Container(
         #     [
         #         self._tabs,
@@ -142,12 +143,13 @@ class ClickSegGUI(InferenceGUI):
                 refine_mode=self.refine_mode.is_switched(),
             )
             self._inference_parameters_card.unlock()
+            raise KeyError("TEST ERROR")
         except KeyError as exc:
             # Hotfix for: https://github.com/supervisely/issues/issues/3618
             params = self.DEFAULT_PARAMS.copy()
             logger.warn("Something went wrong in UI. Please, restart the App.", exc_info=exc)
+            logger.debug("Full state", extra=StateJson())
             self._inference_parameters_card.lock(
                 "Something went wrong in UI. Please, restart the App."
             )
-
         return params
