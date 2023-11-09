@@ -62,7 +62,6 @@ class ClickSegModel(InteractiveSegmentation):
 
         sly.logger.info(f"Building model {self.model_name}...")
         self.predictor = clickseg_api.load_model(model_info, weights_path, self.device)
-        print(f"✅ Model has been successfully loaded on {device.upper()} device")
 
     def predict(
         self,
