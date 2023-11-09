@@ -24,7 +24,7 @@ from src.gui import ClickSegGUI
 from src.clicker import IterativeUserClicker, UserClicker
 
 
-if sly.is_development():
+if sly.is_development() or sly.is_debug_with_sly_net():
     load_dotenv("local.env")
     load_dotenv(os.path.expanduser("~/supervisely.env"))
 

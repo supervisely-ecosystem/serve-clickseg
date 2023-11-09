@@ -130,21 +130,30 @@ class ClickSegGUI(InferenceGUI):
         return widgets.Card("Inference Parameters", content=content)
 
     def get_inference_parameters(self):
-        try:
-            params = dict(
-                iterative_mode=self.iterative_mode_switch.is_switched(),
-                progressive_merge=self.progressive_merge_switch.is_switched(),
-                conf_thres=self.conf_thres_input.get_value(),
-                inference_resolution=self.inference_resolution_input.get_value(),
-                focus_crop_r=self.focus_crop_r_input.get_value(),
-                target_crop_r=self.target_crop_r_input.get_value(),
-                refine_mode=self.refine_mode.is_switched()
-            )
-            self._inference_parameters_card.unlock()
-        except KeyError as exc:
-            # Hotfix for: https://github.com/supervisely/issues/issues/3618
-            params = self.DEFAULT_PARAMS.copy()
-            logger.warn("Something went wrong in UI. Please, restart the App.", exc_info=exc)
-            self._inference_parameters_card.lock("Something went wrong in UI. Please, restart the App.")
+        # Workaround a bug with empty StateJson:
+        # try:
+        #     params = dict(
+        #         iterative_mode=self.iterative_mode_switch.is_switched(),
+        #         progressive_merge=self.progressive_merge_switch.is_switched(),
+        #         conf_thres=self.conf_thres_input.get_value(),
+        #         inference_resolution=self.inference_resolution_input.get_value(),
+        #         focus_crop_r=self.focus_crop_r_input.get_value(),
+        #         target_crop_r=self.target_crop_r_input.get_value(),
+        #         refine_mode=self.refine_mode.is_switched()
+        #     )
+        # except KeyError as exc:
+        #     # Hotfix for: https://github.com/supervisely/issues/issues/3618
+        #     params = self.DEFAULT_PARAMS.copy()
+        #     logger.warn("Something went wrong in UI. Please, restart the App.", exc_info=exc)
+
+        params = dict(
+            iterative_mode=self.iterative_mode_switch.is_switched(),
+            progressive_merge=self.progressive_merge_switch.is_switched(),
+            conf_thres=self.conf_thres_input.get_value(),
+            inference_resolution=self.inference_resolution_input.get_value(),
+            focus_crop_r=self.focus_crop_r_input.get_value(),
+            target_crop_r=self.target_crop_r_input.get_value(),
+            refine_mode=self.refine_mode.is_switched()
+        )
 
         return params
