@@ -7,3 +7,5 @@ test
 crop.jpg
 pred_probs.jpg
 pred.jpg
+.venv
+.DS_Store
