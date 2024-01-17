@@ -71,7 +71,7 @@ class ClickSegModel(InteractiveSegmentation):
         self.predictor = clickseg_api.load_model(model_info, weights_path, self.device)
 
     def serve(self):
-        super().serve()
+        sly.nn.inference.Inference.serve(self)
         server = self._app.get_server()
         self.add_cache_endpoint(server)
 
@@ -167,11 +167,11 @@ class ClickSegModel(InteractiveSegmentation):
             # Predict
             self._inference_image_lock.acquire()
             try:
-                sly.logger.debug(f"predict: {smtool_state['request_uid']}")
+                # sly.logger.debug(f"predict: {smtool_state['request_uid']}")
                 clicks_to_predict = [self.Click(c["x"], c["y"], c["is_positive"]) for c in clicks]
                 pred_mask = self.predict(image_path, clicks_to_predict, settings).mask
             finally:
-                sly.logger.debug(f"predict done: {smtool_state['request_uid']}")
+                # sly.logger.debug(f"predict done: {smtool_state['request_uid']}")
                 self._inference_image_lock.release()
                 silent_remove(image_path)
 
