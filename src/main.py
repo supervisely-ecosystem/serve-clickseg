@@ -141,9 +141,9 @@ class ClickSegModel(InteractiveSegmentation):
 
             # Crop the image
             image_path = os.path.join(app_dir, f"{time.time()}_{rand_str(10)}.jpg")
-            image_np = functional.crop_image(crop, image_np)
             if isinstance(image_np, list) and len(image_np) > 0:
                 image_np = image_np[0]
+            image_np = functional.crop_image(crop, image_np)
             sly_image.write(image_path, image_np)
 
             # Prepare init_mask (only for images)
