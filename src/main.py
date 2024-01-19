@@ -204,6 +204,7 @@ class ClickSegModel(InteractiveSegmentation):
 
         @server.post("/smart_segmentation_batched")
         def smart_segmentation_batched(response: Response, request: Request):
+            raise Exception("Test exception")
             response_batch = {}
             data = request.state.context["data_to_process"]
             app_session_id = sly.io.env.task_id()
