@@ -43,7 +43,10 @@ class ClickSegModel(InteractiveSegmentation):
         self,
         model_dir: str = None,
         device: Literal["cpu", "cuda", "cuda:0", "cuda:1", "cuda:2", "cuda:3"] = "cpu",
+        started_via_api: bool = False,
+        deploy_params: Dict[str, Any] = None,
     ):
+        sly.logger.info(f"Started via API: {started_via_api}")
         if self.gui and sly.is_production():
             model_index = self.gui._models_table.get_selected_row_index()
             model_info = get_model_zoo()[model_index]
@@ -195,12 +198,10 @@ class ClickSegModel(InteractiveSegmentation):
                 }
             return response
 
-
         @server.post("/is_online")
         def is_online(response: Response, request: Request):
             response = {"is_online": True}
             return response
-
 
         @server.post("/smart_segmentation_batched")
         def smart_segmentation_batched(response: Response, request: Request):
@@ -216,7 +217,6 @@ class ClickSegModel(InteractiveSegmentation):
                 )
                 response_batch[image_idx] = image_prediction
             return response_batch
-
 
     def predict(
         self,
