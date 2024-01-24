@@ -1,0 +1,82 @@
+[
+    {
+        "model_id": "resnet34_0",
+        "model": "ResNet34",
+        "mode": "CDNet",
+        "weights_url": "https://drive.google.com/file/d/1PwWtOIGnzLr2HPy3Br5_bUEDq-S7894v/view?usp=share_link",
+        "trained on": "SBD",
+        "size": "89.72 MB"
+    },
+    {
+        "model_id": "resnet34_1",
+        "model": "ResNet34",
+        "mode": "CDNet",
+        "weights_url": "https://drive.google.com/file/d/1q44LfrXQoVC_E-DdMkovh_dod_x6oK7i/view?usp=share_link",
+        "trained on": "COCO+LVIS",
+        "size": "89.72 MB"
+    },
+    {
+        "model_id": "segformerb0-s1_6",
+        "model": "SegFormerB0-S1",
+        "mode": "FocalClick",
+        "weights_url": "https://drive.google.com/file/d/1tZbzPznKu1rXUs9JBTiUw19WeAkxeUy4/view?usp=share_link",
+        "trained on": "COCO+LVIS",
+        "size": "14.38 MB"
+    },
+    {
+        "model_id": "segformerb0-s2_7",
+        "model": "SegFormerB0-S2",
+        "mode": "FocalClick",
+        "weights_url": "https://drive.google.com/file/d/1YyviVjpZ2ps9Atj212HPRI3-0yJYY8gi/view?usp=share_link",
+        "trained on": "COCO+LVIS",
+        "size": "14.38 MB"
+    },
+    {
+        "model_id": "segformerb3-s2_8",
+        "model": "SegFormerB3-S2",
+        "mode": "FocalClick",
+        "weights_url": "https://drive.google.com/file/d/1dNhqSPXEX3oyHce4gBRjpXvJHlVZtJN-/view?usp=share_link",
+        "trained on": "COCO+LVIS",
+        "size": "174.56 MB"
+    },
+    {
+        "model_id": "segformerb3-s2_9",
+        "model": "SegFormerB3-S2",
+        "mode": "FocalClick",
+        "weights_url": "https://drive.google.com/file/d/1DkFun_tiw7z7RpjDtwqV65k1e9jxnLkr/view?usp=share_link",
+        "trained on": "COCO, LVIS, ADE20K, MSRA10K, DUT, YoutubeVOS, ThinObject, HFlicker",
+        "size": "174.56 MB"
+    },
+    {
+        "model_id": "mobilenetv2_10",
+        "model": "MobileNetV2",
+        "mode": "Baseline",
+        "weights_url": "https://drive.google.com/file/d/1ETroGTgKNOptUi1-sL8WCJf6nePRED-Q/view?usp=share_link",
+        "trained on": "COCO+LVIS",
+        "size": "7.5 MB"
+    },
+    {
+        "model_id": "pplcnet_11",
+        "model": "PPLCNet",
+        "mode": "Baseline",
+        "weights_url": "https://drive.google.com/file/d/15mmP4ITRiaMQdhg4bFDLEZkniomludMw/view?usp=share_link",
+        "trained on": "COCO+LVIS",
+        "size": "11.92 MB"
+    },
+    {
+        "model_id": "mobilenetv2_12",
+        "model": "MobileNetV2",
+        "mode": "Baseline",
+        "weights_url": "https://drive.google.com/file/d/1argMmKlkP7RwbtwUEO2CBVndyo1Smkz-/view?usp=share_link",
+        "trained on": "COCO, LVIS, ADE20K, MSRA10K, DUT, YoutubeVOS, ThinObject, HFlicker",
+        "size": "7.5 MB"
+    },
+    {
+        "model_id": "pplcnet_13",
+        "model": "PPLCNet",
+        "mode": "Baseline",
+        "weights_url": "https://drive.google.com/file/d/1GscL8sc4o1715L5oBumMsC5D7DuUNlH7/view?usp=share_link",
+        "trained on": "COCO, LVIS, ADE20K, MSRA10K, DUT, YoutubeVOS, ThinObject, HFlicker",
+        "size": "11.92 MB"
+    }
+]
