@@ -11,13 +11,16 @@ import numpy as np
 import cv2
 import torch
 import gdown
+import supervisely as sly
+
 
 from src.clicker import UserClicker, IterativeUserClicker
 
 
 def download_weights(url, output_path):
     if not os.path.exists(output_path):
-        res = gdown.download(url, output=output_path, fuzzy=True)
+        # res = gdown.download(url, output=output_path, fuzzy=True)
+        res = sly.fs.download(url, output_path)
         return res
     return output_path
 
