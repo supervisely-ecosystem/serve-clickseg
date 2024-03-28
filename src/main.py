@@ -74,6 +74,7 @@ class ClickSegModel(InteractiveSegmentation):
         sly.nn.inference.Inference.serve(self)
         server = self._app.get_server()
         self.add_cache_endpoint(server)
+        self.add_cache_files_endpoint(server)
 
         @server.post("/smart_segmentation")
         def smart_segmentation(response: Response, request: Request):
@@ -195,12 +196,10 @@ class ClickSegModel(InteractiveSegmentation):
                 }
             return response
 
-
         @server.post("/is_online")
         def is_online(response: Response, request: Request):
             response = {"is_online": True}
             return response
-
 
         @server.post("/smart_segmentation_batched")
         def smart_segmentation_batched(response: Response, request: Request):
@@ -216,7 +215,6 @@ class ClickSegModel(InteractiveSegmentation):
                 )
                 response_batch[image_idx] = image_prediction
             return response_batch
-
 
     def predict(
         self,
