@@ -1,3 +1,4 @@
+import json
 import os
 from typing_extensions import Literal
 import time
@@ -7,7 +8,9 @@ from cachetools import LRUCache
 
 import supervisely as sly
 from dotenv import load_dotenv
-from fastapi import Response, Request, status
+from fastapi import Response, Request, status, UploadFile, Form
+from fastapi.responses import JSONResponse
+
 
 try:
     from typing import Literal
@@ -75,6 +78,120 @@ class ClickSegModel(InteractiveSegmentation):
         server = self._app.get_server()
         self.add_cache_endpoint(server)
         self.add_cache_files_endpoint(server)
+
+        @server.post("/smart_segmentation_files")
+        def smart_segmentation_files(
+            request: Request, files: List[UploadFile], settings: str = Form("{}")
+        ):
+            result = []
+            settings = json.loads(settings)
+            sly.logger.debug(
+                f"smart_segmentation inference: context=",
+                extra=settings,
+            )
+            smtool_states = settings.get("state", [])
+            inf_settings = self._get_inference_settings(settings)
+            i = 1
+            for file, smtool_state in zip(files, smtool_states):
+                sly.logger.debug(f"infering file #{i+1}", extra={"smtool_state": smtool_state})
+                i += 1
+                # Parse request
+                try:
+                    crop = smtool_state["crop"]
+                    positive_clicks, negative_clicks = (
+                        smtool_state["positive"],
+                        smtool_state["negative"],
+                    )
+                    if len(positive_clicks) + len(negative_clicks) == 0:
+                        sly.logger.warn("No clicks received.")
+                        result.append(
+                            {
+                                "origin": None,
+                                "bitmap": None,
+                                "success": True,
+                                "error": None,
+                            }
+                        )
+                        continue
+                except Exception as exc:
+                    sly.logger.warn("Error parsing request:" + str(exc), exc_info=True)
+                    return JSONResponse(
+                        {"message": "400: Bad request.", "success": False}, status_code=400
+                    )
+
+                # Pre-process clicks
+                clicks = [{**click, "is_positive": True} for click in positive_clicks]
+                clicks += [{**click, "is_positive": False} for click in negative_clicks]
+                clicks = functional.transform_clicks_to_crop(crop, clicks)
+                is_in_bbox = functional.validate_click_bounds(crop, clicks)
+                if not is_in_bbox:
+                    sly.logger.warn(f"Invalid value: click is out of bbox bounds.")
+                    result.append(
+                        {
+                            "origin": None,
+                            "bitmap": None,
+                            "success": True,
+                            "error": None,
+                        }
+                    )
+                    continue
+
+                # Crop the image
+                app_dir = get_data_dir()
+                image_np = sly_image.read_bytes(file.file.read())
+                hash_str = functional.get_hash_from_context(smtool_state)
+                self._inference_image_cache.set(hash_str, image_np)
+                image_np = functional.crop_image(crop, image_np)
+                image_path = os.path.join(app_dir, f"{time.time()}_{rand_str(10)}.jpg")
+                sly_image.write(image_path, image_np)
+
+                # Prepare init_mask (only for images)
+                geom_data = smtool_state.get("geometry")
+                init_mask = sly.Bitmap.from_json(geom_data) if geom_data is not None else None
+                if init_mask is not None:
+                    h, w = image_np.shape[:2]
+                    init_mask = functional.bitmap_to_mask(init_mask, h, w)
+                    init_mask = functional.crop_image(crop, init_mask)
+                    assert init_mask.shape[:2] == image_np.shape[:2]
+                inf_settings["init_mask"] = init_mask
+
+                # Predict
+                self._inference_image_lock.acquire()
+                try:
+                    sly.logger.debug(f"predict: {smtool_state['request_uid']}")
+                    clicks_to_predict = [
+                        self.Click(c["x"], c["y"], c["is_positive"]) for c in clicks
+                    ]
+                    pred_mask = self.predict(image_path, clicks_to_predict, inf_settings).mask
+                finally:
+                    sly.logger.debug(f"predict done: {smtool_state['request_uid']}")
+                    self._inference_image_lock.release()
+                    silent_remove(image_path)
+
+                if pred_mask.any():
+                    bitmap = sly.Bitmap(pred_mask)
+                    bitmap_origin, bitmap_data = functional.format_bitmap(bitmap, crop)
+                    sly.logger.debug(f"smart_segmentation inference done!")
+                    result.append(
+                        {
+                            "origin": bitmap_origin,
+                            "bitmap": bitmap_data,
+                            "success": True,
+                            "error": None,
+                        }
+                    )
+                else:
+                    sly.logger.debug(f"Predicted mask is empty.")
+                    result.append(
+                        {
+                            "origin": None,
+                            "bitmap": None,
+                            "success": True,
+                            "error": None,
+                        }
+                    )
+
+            return result
 
         @server.post("/smart_segmentation")
         def smart_segmentation(response: Response, request: Request):
