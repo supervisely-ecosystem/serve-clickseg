@@ -1,6 +1,6 @@
 FROM supervisely/serve-clickseg:1.0.2
 
-RUN pip install git+https://github.com/supervisely/supervisely.git@bbox_tracking_debug
+RUN pip install git+https://github.com/supervisely/supervisely.git@inference-improvements
 
 WORKDIR /app
 COPY . /app
