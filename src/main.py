@@ -73,7 +73,7 @@ class ClickSegModel(InteractiveSegmentation):
     def serve(self):
         sly.nn.inference.Inference.serve(self)
         server = self._app.get_server()
-        self.add_cache_endpoint(server)
+        self.cache.add_cache_endpoint(server)
 
         @server.post("/smart_segmentation")
         def smart_segmentation(response: Response, request: Request):
@@ -130,9 +130,9 @@ class ClickSegModel(InteractiveSegmentation):
                     smtool_state,
                     api,
                     app_dir,
-                    self.download_image,
-                    self.download_frame,
-                    self.download_image_by_hash,
+                    self.cache.download_image,
+                    self.cache.download_frame,
+                    self.cache.download_image_by_hash,
                 )
                 self._inference_image_cache.set(hash_str, image_np)
             else:
