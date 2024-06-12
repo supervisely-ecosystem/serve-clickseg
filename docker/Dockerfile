@@ -19,7 +19,7 @@ RUN pip3 install \
     thop \
     gdown
 
-RUN pip3 install supervisely==6.73.102
+RUN pip3 install supervisely==6.73.104
 
 RUN mkdir /checkpoints
 RUN gdown https://drive.google.com/file/d/1DkFun_tiw7z7RpjDtwqV65k1e9jxnLkr/view?usp=share_link --fuzzy -O /checkpoints/segformerb3-s2_9.pth
