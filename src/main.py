@@ -143,6 +143,7 @@ class ClickSegModel(InteractiveSegmentation):
             image_path = os.path.join(app_dir, f"{time.time()}_{rand_str(10)}.jpg")
             if isinstance(image_np, list) and len(image_np) > 0:
                 image_np = image_np[0]
+            img_height, img_width = image_np.shape[:2] # original image size
             image_np = functional.crop_image(crop, image_np)
             sly_image.write(image_path, image_np)
 
@@ -159,8 +160,7 @@ class ClickSegModel(InteractiveSegmentation):
             else:
                 init_mask = None
             if init_mask is not None:
-                image_info = api.image.get_info_by_id(image_id)
-                init_mask = functional.bitmap_to_mask(init_mask, image_info.height, image_info.width)
+                init_mask = functional.bitmap_to_mask(init_mask, img_height, img_width)
                 init_mask = functional.crop_image(crop, init_mask)
                 assert init_mask.shape[:2] == image_np.shape[:2]
             settings["init_mask"] = init_mask
