@@ -87,7 +87,7 @@ class ClickSegModel(InteractiveSegmentation):
                 state = request.state.state
                 settings = self._get_inference_settings(state)
                 smtool_state = request.state.context
-                api = request.state.api
+                api: sly.Api = request.state.api
                 crop = smtool_state["crop"]
                 positive_clicks, negative_clicks = (
                     smtool_state["positive"],
@@ -147,12 +147,17 @@ class ClickSegModel(InteractiveSegmentation):
             image_np = functional.crop_image(crop, image_np)
             sly_image.write(image_path, image_np)
 
-            # Prepare init_mask (only for images)
+            # Prepare init_mask (supported images and videos)
             figure_id = smtool_state.get("figure_id")
             image_id = smtool_state.get("image_id")
-            if smtool_state.get("init_figure") is True and image_id is not None:
+            video_info = smtool_state.get("video")
+            if smtool_state.get("init_figure") is True and any([video_info, image_id]):
                 # Download and save in Cache
-                init_mask = functional.download_init_mask(api, figure_id, image_id)
+                if image_id:
+                    init_mask = functional.download_init_mask(api, figure_id, image_id)
+                elif video_info:
+                    figure = api.video.figure.get_info_by_id(figure_id)
+                    init_mask = sly.Bitmap.from_json(figure.geometry)
                 self._init_mask_cache[figure_id] = init_mask
             elif self._init_mask_cache.get(figure_id) is not None:
                 # Load from Cache
