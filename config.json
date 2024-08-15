@@ -12,7 +12,8 @@
     "serve"
   ],
   "session_tags": [
-    "sly_smart_annotation"
+    "sly_smart_annotation",
+    "scalable"
   ],
   "need_gpu": false,
   "gpu": "preferred",
