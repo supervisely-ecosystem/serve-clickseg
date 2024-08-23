@@ -19,7 +19,7 @@ RUN pip3 install \
     thop \
     gdown
 
-RUN pip3 install setuptools==70.3.0
+RUN pip3 install setuptools==69.5.1
 RUN pip3 install git+https://github.com/supervisely/supervisely.git@cache-error-fix-3
 
 RUN mkdir /checkpoints
