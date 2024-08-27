@@ -70,9 +70,14 @@ class ClickSegModel(InteractiveSegmentation):
         sly.logger.info(f"Building model {self.model_name}...")
         self.predictor = clickseg_api.load_model(model_info, weights_path, self.device)
 
+    def check_model_is_ready(self):
+        return self._model_served
+
     def serve(self):
         sly.nn.inference.Inference.serve(self)
         server = self._app.get_server()
+        self._app.set_ready_check_func(self.check_model_is_ready)
+        
         self.cache.add_cache_endpoint(server)
 
         @server.post("/smart_segmentation")
