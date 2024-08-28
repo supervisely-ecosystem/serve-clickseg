@@ -1,4 +1,5 @@
-FROM supervisely/base-py-sdk:6.69.70
+# FROM supervisely/base-py-sdk:6.69.70
+FROM supervisely/base-py-sdk:6.73.137
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y build-essential
@@ -19,7 +20,9 @@ RUN pip3 install \
     thop \
     gdown
 
-RUN pip3 install setuptools==69.5.1
+
+# RUN pip3 install setuptools==69.5.1
+RUN pip3 install --upgrade setuptools==70.3.0
 RUN pip3 install git+https://github.com/supervisely/supervisely.git@server-healthchecks-and-cache-error-fix 
 
 RUN mkdir /checkpoints
