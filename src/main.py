@@ -73,6 +73,7 @@ class ClickSegModel(InteractiveSegmentation):
     def serve(self):
         sly.nn.inference.Inference.serve(self)
         server = self._app.get_server()
+
         self.cache.add_cache_endpoint(server)
 
         @server.post("/smart_segmentation")
