@@ -20,7 +20,8 @@ RUN pip3 install \
     gdown
 
 RUN pip3 install setuptools==69.5.1
-RUN pip3 install git+https://github.com/supervisely/supervisely.git@server-healthchecks-and-cache-error-fix 
 
 RUN mkdir /checkpoints
 RUN gdown https://drive.google.com/file/d/1DkFun_tiw7z7RpjDtwqV65k1e9jxnLkr/view?usp=share_link --fuzzy -O /checkpoints/segformerb3-s2_9.pth
+
+RUN pip3 install supervisely==6.73.310
