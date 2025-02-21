@@ -413,6 +413,8 @@ class ClickSegModel(InteractiveSegmentation):
             sly.fs.silent_remove("init_mask.png")
             if init_mask is not None:
                 sly.image.write("init_mask.png", init_mask)
+
+        torch.cuda.empty_cache()
         return res
 
     def get_models(self):

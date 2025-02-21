@@ -51,5 +51,20 @@
                 "SLY_APP_DATA_DIR": "${workspaceFolder}/app_data"
             }
         },
+        {
+            "name": "Python Debugger: Remote Attach",
+            "type": "debugpy",
+            "request": "attach",
+            "connect": {
+                "host": "10.62.10.6",
+                "port": 47429
+            },
+            "pathMappings": [
+                {
+                    "localRoot": "${workspaceFolder}",
+                    "remoteRoot": "/app/repo"
+                }
+            ]
+        },
     ]
 }
