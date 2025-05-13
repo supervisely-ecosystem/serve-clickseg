@@ -362,6 +362,8 @@ class ClickSegModel(InteractiveSegmentation):
         clicks: List[InteractiveSegmentation.Click],
         settings: Dict[str, Any],
     ) -> PredictionSegmentation:
+        # disable gradient calculation
+        torch.set_grad_enabled(False)
         # Load image
         img = clickseg_api.load_image(image_path)
 
