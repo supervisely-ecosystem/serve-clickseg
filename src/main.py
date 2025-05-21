@@ -1,9 +1,10 @@
+import logging
 import os
 from typing_extensions import Literal
 import time
 import torch
-from pathlib import Path
-from cachetools import LRUCache
+import threading
+from datetime import datetime
 
 import supervisely as sly
 from dotenv import load_dotenv
@@ -14,7 +15,7 @@ try:
 except ImportError:
     # for compatibility with python 3.7
     from typing_extensions import Literal
-from typing import List, Any, Dict, Literal, Optional, Union
+from typing import List, Any, Dict, Literal
 
 from supervisely.nn.inference import InteractiveSegmentation
 from supervisely.nn.inference.interactive_segmentation import functional
@@ -23,6 +24,7 @@ from supervisely.imaging import image as sly_image
 from supervisely.io.fs import silent_remove
 from supervisely._utils import rand_str
 from supervisely.app.content import get_data_dir
+from supervisely import logger
 
 from src.model_zoo import get_model_zoo
 from src import clickseg_api
@@ -34,6 +36,44 @@ from src.clicker import IterativeUserClicker, UserClicker
 if sly.is_development() or sly.is_debug_with_sly_net():
     load_dotenv("local.env")
     load_dotenv(os.path.expanduser("~/supervisely.env"))
+
+
+def monitor_vram_usage(interval=1, stop_event=None, max_errors=3):
+    if stop_event is None:
+        stop_event = threading.Event()
+
+    def monitoring_task():
+        logger.debug("Starting VRAM monitoring")
+        error_count = 0
+        while not stop_event.is_set():
+            try:
+                current_memory = torch.cuda.memory_allocated() / (1024**2)
+                peak_memory = torch.cuda.max_memory_allocated() / (1024**2)
+                reserved_memory = torch.cuda.memory_reserved() / (1024**2)
+                cached_memory = reserved_memory - current_memory
+
+                logger.debug(
+                    "VRAM monitoring:",
+                    extra={
+                        "current": current_memory,
+                        "peak": peak_memory,
+                        "reserved": reserved_memory,
+                        "cached": cached_memory,
+                    },
+                )
+                error_count = 0
+                time.sleep(interval)
+            except Exception as e:
+                error_count += 1
+                logger.debug(f"Error in VRAM monitoring: {str(e)}", exc_info=True)
+                if error_count >= max_errors:
+                    logger.debug(f"Stopping VRAM monitoring after {max_errors} consecutive errors")
+                    return
+                time.sleep(interval)
+
+    monitor_thread = threading.Thread(target=monitoring_task, daemon=True)
+    monitor_thread.start()
+    return monitor_thread, stop_event
 
 
 class ClickSegModel(InteractiveSegmentation):
@@ -452,27 +492,38 @@ class ClickSegModel(InteractiveSegmentation):
 # inference_settings_path = os.path.join(root_source_path, "custom_settings.yaml")
 inference_settings_path = None
 
-if sly.is_production() and not os.environ.get("DEBUG_WITH_SLY_NET"):
-    # production
-    m = ClickSegModel(use_gui=True, custom_inference_settings=inference_settings_path)
-    m.gui._models_table.select_row(ClickSegModel.DEFAULT_ROW_IDX)
-    m.serve()
-else:
-    # debug
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    print("Using device:", device)
-    m = ClickSegModel(use_gui=True, custom_inference_settings=inference_settings_path)
-    m.gui._models_table.select_row(ClickSegModel.DEFAULT_ROW_IDX)
-    # m.load_on_device(m.model_dir, device)
-    if os.environ.get("DEBUG_WITH_SLY_NET"):
-        print("mode=DEBUG_WITH_SLY_NET")
+monitor_thread = None
+monitor_stop_event = None
+if logger.getEffectiveLevel() <= logging.DEBUG:
+    monitor_thread, monitor_stop_event = monitor_vram_usage()
+
+try:
+    if sly.is_production() and not os.environ.get("DEBUG_WITH_SLY_NET"):
+        # production
+        m = ClickSegModel(use_gui=True, custom_inference_settings=inference_settings_path)
+        m.gui._models_table.select_row(ClickSegModel.DEFAULT_ROW_IDX)
         m.serve()
     else:
-        print("mode=LOCAL_DEBUG")
-        image_path = "demo_data/aniket-solankar.jpg"
-        clicks_json = sly.json.load_json_file("demo_data/clicks.json")
-        clicks = [InteractiveSegmentation.Click(**p) for p in clicks_json]
-        pred = m.predict(image_path, clicks, settings={})
-        vis_path = f"demo_data/prediction.jpg"
-        m.visualize([pred], image_path, vis_path, thickness=0)
-        print(f"predictions and visualization have been saved: {vis_path}")
+        # debug
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        print("Using device:", device)
+        m = ClickSegModel(use_gui=True, custom_inference_settings=inference_settings_path)
+        m.gui._models_table.select_row(ClickSegModel.DEFAULT_ROW_IDX)
+        # m.load_on_device(m.model_dir, device)
+        if os.environ.get("DEBUG_WITH_SLY_NET"):
+            print("mode=DEBUG_WITH_SLY_NET")
+            m.serve()
+        else:
+            print("mode=LOCAL_DEBUG")
+            image_path = "demo_data/aniket-solankar.jpg"
+            clicks_json = sly.json.load_json_file("demo_data/clicks.json")
+            clicks = [InteractiveSegmentation.Click(**p) for p in clicks_json]
+            pred = m.predict(image_path, clicks, settings={})
+            vis_path = f"demo_data/prediction.jpg"
+            m.visualize([pred], image_path, vis_path, thickness=0)
+            print(f"predictions and visualization have been saved: {vis_path}")
+finally:
+    if monitor_thread is not None:
+        monitor_stop_event.set()
+        monitor_thread.join(timeout=2)
+    logger.debug("VRAM monitoring stopped")
