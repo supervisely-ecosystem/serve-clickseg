@@ -494,38 +494,31 @@ class ClickSegModel(InteractiveSegmentation):
 # inference_settings_path = os.path.join(root_source_path, "custom_settings.yaml")
 inference_settings_path = None
 
-monitor_thread = None
-monitor_stop_event = None
-if logger.getEffectiveLevel() <= logging.DEBUG:
-    monitor_thread, monitor_stop_event = monitor_vram_usage()
-
-try:
-    if sly.is_production() and not os.environ.get("DEBUG_WITH_SLY_NET"):
-        # production
-        m = ClickSegModel(use_gui=True, custom_inference_settings=inference_settings_path)
-        m.gui._models_table.select_row(ClickSegModel.DEFAULT_ROW_IDX)
+if sly.is_production() and not os.environ.get("DEBUG_WITH_SLY_NET"):
+    # production
+    m = ClickSegModel(use_gui=True, custom_inference_settings=inference_settings_path)
+    m.gui._models_table.select_row(ClickSegModel.DEFAULT_ROW_IDX)
+    m.serve()
+else:
+    # debug
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print("Using device:", device)
+    m = ClickSegModel(use_gui=True, custom_inference_settings=inference_settings_path)
+    m.gui._models_table.select_row(ClickSegModel.DEFAULT_ROW_IDX)
+    # m.load_on_device(m.model_dir, device)
+    if os.environ.get("DEBUG_WITH_SLY_NET"):
+        print("mode=DEBUG_WITH_SLY_NET")
         m.serve()
     else:
-        # debug
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        print("Using device:", device)
-        m = ClickSegModel(use_gui=True, custom_inference_settings=inference_settings_path)
-        m.gui._models_table.select_row(ClickSegModel.DEFAULT_ROW_IDX)
-        # m.load_on_device(m.model_dir, device)
-        if os.environ.get("DEBUG_WITH_SLY_NET"):
-            print("mode=DEBUG_WITH_SLY_NET")
-            m.serve()
-        else:
-            print("mode=LOCAL_DEBUG")
-            image_path = "demo_data/aniket-solankar.jpg"
-            clicks_json = sly.json.load_json_file("demo_data/clicks.json")
-            clicks = [InteractiveSegmentation.Click(**p) for p in clicks_json]
-            pred = m.predict(image_path, clicks, settings={})
-            vis_path = f"demo_data/prediction.jpg"
-            m.visualize([pred], image_path, vis_path, thickness=0)
-            print(f"predictions and visualization have been saved: {vis_path}")
-finally:
-    if monitor_thread is not None:
-        monitor_stop_event.set()
-        monitor_thread.join(timeout=2)
-    logger.debug("VRAM monitoring stopped")
+        print("mode=LOCAL_DEBUG")
+        image_path = "demo_data/aniket-solankar.jpg"
+        clicks_json = sly.json.load_json_file("demo_data/clicks.json")
+        clicks = [InteractiveSegmentation.Click(**p) for p in clicks_json]
+        pred = m.predict(image_path, clicks, settings={})
+        vis_path = f"demo_data/prediction.jpg"
+        m.visualize([pred], image_path, vis_path, thickness=0)
+        print(f"predictions and visualization have been saved: {vis_path}")
+
+if logger.getEffectiveLevel() <= logging.DEBUG:
+    monitor_thread, monitor_stop_event = monitor_vram_usage()
+    m.app.call_before_shutdown(lambda: monitor_stop_event.set())
