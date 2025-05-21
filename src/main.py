@@ -1,5 +1,6 @@
 import logging
 import os
+import subprocess
 from typing_extensions import Literal
 import time
 import torch
@@ -42,6 +43,17 @@ def monitor_vram_usage(interval=1, stop_event=None, max_errors=3):
     if stop_event is None:
         stop_event = threading.Event()
 
+    def get_nvidia_smi_used_memory():
+        try:
+            result = subprocess.check_output(
+                ["nvidia-smi", "--query-gpu=memory.used", "--format=csv,nounits,noheader"],
+                encoding="utf-8",
+            )
+            memory_used = float(result.strip())
+            return memory_used, None
+        except Exception as e:
+            return None, e
+
     def monitoring_task():
         logger.debug("Starting VRAM monitoring")
         error_count = 0
@@ -51,14 +63,22 @@ def monitor_vram_usage(interval=1, stop_event=None, max_errors=3):
                 peak_memory = torch.cuda.max_memory_allocated() / (1024**2)
                 reserved_memory = torch.cuda.memory_reserved() / (1024**2)
                 cached_memory = reserved_memory - current_memory
+                nvidia_used, exc = get_nvidia_smi_used_memory()
+
+                nvidia_value = 0
+                if exc is not None:
+                    nvidia_value = "Error: " + str(exc)
+                else:
+                    nvidia_value = round(nvidia_used, 2)
 
                 logger.debug(
                     "VRAM monitoring:",
                     extra={
-                        "current": current_memory,
-                        "peak": peak_memory,
-                        "reserved": reserved_memory,
-                        "cached": cached_memory,
+                        "current (MB)": round(current_memory, 2),
+                        "peak (MB)": round(peak_memory, 2),
+                        "reserved (MB)": round(reserved_memory, 2),
+                        "cached (MB)": round(cached_memory, 2),
+                        "nvidia-smi (MB)": nvidia_value,
                     },
                 )
                 error_count = 0
