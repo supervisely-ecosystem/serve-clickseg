@@ -48,6 +48,7 @@ def monitor_vram_usage(interval=1, stop_event=None, max_errors=3):
         error_count = 0
         while not stop_event.is_set():
             try:
+                torch.cuda.reset_peak_memory_stats()
                 current_memory = torch.cuda.memory_allocated() / (1024**2)
                 peak_memory = torch.cuda.max_memory_allocated() / (1024**2)
                 reserved_memory = torch.cuda.memory_reserved() / (1024**2)
