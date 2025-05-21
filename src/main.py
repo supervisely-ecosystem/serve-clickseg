@@ -1,3 +1,4 @@
+import gc
 import os
 from typing_extensions import Literal
 import time
@@ -417,6 +418,7 @@ class ClickSegModel(InteractiveSegmentation):
                 sly.image.write("init_mask.png", init_mask)
 
         torch.cuda.empty_cache()
+        gc.collect()
         return res
 
     def get_models(self):
