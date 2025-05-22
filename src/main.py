@@ -26,6 +26,7 @@ from supervisely.io.fs import silent_remove
 from supervisely._utils import rand_str
 from supervisely.app.content import get_data_dir
 from supervisely import logger
+from supervisely.nn.utils import log_gpu_usage
 
 from src.model_zoo import get_model_zoo
 from src import clickseg_api
@@ -37,64 +38,6 @@ from src.clicker import IterativeUserClicker, UserClicker
 if sly.is_development() or sly.is_debug_with_sly_net():
     load_dotenv("local.env")
     load_dotenv(os.path.expanduser("~/supervisely.env"))
-
-
-def monitor_vram_usage(interval=1, stop_event=None, max_errors=3):
-    if stop_event is None:
-        stop_event = threading.Event()
-
-    def get_nvidia_smi_used_memory():
-        try:
-            result = subprocess.check_output(
-                ["nvidia-smi", "--query-gpu=memory.used", "--format=csv,nounits,noheader"],
-                encoding="utf-8",
-            )
-            memory_used = float(result.strip())
-            return memory_used, None
-        except Exception as e:
-            return None, e
-
-    def monitoring_task():
-        logger.debug("Starting VRAM monitoring")
-        error_count = 0
-        while not stop_event.is_set():
-            try:
-                torch.cuda.reset_peak_memory_stats()
-                current_memory = torch.cuda.memory_allocated() / (1024**2)
-                peak_memory = torch.cuda.max_memory_allocated() / (1024**2)
-                reserved_memory = torch.cuda.memory_reserved() / (1024**2)
-                cached_memory = reserved_memory - current_memory
-                nvidia_used, exc = get_nvidia_smi_used_memory()
-
-                nvidia_value = 0
-                if exc is not None:
-                    nvidia_value = "Error: " + str(exc)
-                else:
-                    nvidia_value = round(nvidia_used, 2)
-
-                logger.debug(
-                    "VRAM monitoring:",
-                    extra={
-                        "current (MB)": round(current_memory, 2),
-                        "peak (MB)": round(peak_memory, 2),
-                        "reserved (MB)": round(reserved_memory, 2),
-                        "cached (MB)": round(cached_memory, 2),
-                        "nvidia-smi (MB)": nvidia_value,
-                    },
-                )
-                error_count = 0
-                time.sleep(interval)
-            except Exception as e:
-                error_count += 1
-                logger.debug(f"Error in VRAM monitoring: {str(e)}", exc_info=True)
-                if error_count >= max_errors:
-                    logger.debug(f"Stopping VRAM monitoring after {max_errors} consecutive errors")
-                    return
-                time.sleep(interval)
-
-    monitor_thread = threading.Thread(target=monitoring_task, daemon=True)
-    monitor_thread.start()
-    return monitor_thread, stop_event
 
 
 class ClickSegModel(InteractiveSegmentation):
@@ -417,6 +360,7 @@ class ClickSegModel(InteractiveSegmentation):
                     )
             return result
 
+    @log_gpu_usage
     def predict(
         self,
         image_path: str,
@@ -537,7 +481,3 @@ else:
         vis_path = f"demo_data/prediction.jpg"
         m.visualize([pred], image_path, vis_path, thickness=0)
         print(f"predictions and visualization have been saved: {vis_path}")
-
-if logger.getEffectiveLevel() <= logging.DEBUG:
-    monitor_thread, monitor_stop_event = monitor_vram_usage()
-    m.app.call_before_shutdown(lambda: monitor_stop_event.set())
