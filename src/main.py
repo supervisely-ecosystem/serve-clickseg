@@ -1,11 +1,8 @@
-import logging
+import gc
 import os
-import subprocess
 from typing_extensions import Literal
 import time
 import torch
-import threading
-from datetime import datetime
 
 import supervisely as sly
 from dotenv import load_dotenv
@@ -422,6 +419,7 @@ class ClickSegModel(InteractiveSegmentation):
                 sly.image.write("init_mask.png", init_mask)
 
         torch.cuda.empty_cache()
+        gc.collect()
         return res
 
     def get_models(self):
