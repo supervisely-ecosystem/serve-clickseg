@@ -27,7 +27,6 @@ from supervisely.app.content import get_data_dir
 
 from src.model_zoo import get_model_zoo
 from src import clickseg_api
-from src import init_mask as init_mask_lib
 
 from src.gui import ClickSegGUI
 from src.clicker import IterativeUserClicker, UserClicker
@@ -150,22 +149,25 @@ class ClickSegModel(InteractiveSegmentation):
             image_np = functional.crop_image(crop, image_np)
             sly_image.write(image_path, image_np)
 
-            # Prepare init_mask: contract mask first, deprecated figure_id as fallback
-            try:
-                init_mask = init_mask_lib.resolve_init_mask(
-                    smtool_state, api, self._init_mask_cache, img_height, img_width
-                )
-            except init_mask_lib.MaskDecodeError as exc:
-                sly.logger.warn(f"Invalid Smart Tool init mask: {exc}")
-                silent_remove(image_path)
-                response.status_code = status.HTTP_400_BAD_REQUEST
-                return {
-                    "origin": None,
-                    "bitmap": None,
-                    "success": False,
-                    "error": str(exc),
-                }
+            # Prepare init_mask (supported images and videos)
+            figure_id = smtool_state.get("figure_id")
+            image_id = smtool_state.get("image_id")
+            video_info = smtool_state.get("video")
+            if smtool_state.get("init_figure") is True and any([video_info, image_id]):
+                # Download and save in Cache
+                if image_id:
+                    init_mask = functional.download_init_mask(api, figure_id, image_id)
+                elif video_info:
+                    figure = api.video.figure.get_info_by_id(figure_id)
+                    init_mask = sly.Bitmap.from_json(figure.geometry)
+                self._init_mask_cache[figure_id] = init_mask
+            elif self._init_mask_cache.get(figure_id) is not None:
+                # Load from Cache
+                init_mask = self._init_mask_cache[figure_id]
+            else:
+                init_mask = None
             if init_mask is not None:
+                init_mask = functional.bitmap_to_mask(init_mask, img_height, img_width)
                 init_mask = functional.crop_image(crop, init_mask)
                 assert init_mask.shape[:2] == image_np.shape[:2]
             settings["init_mask"] = init_mask
@@ -294,31 +296,26 @@ class ClickSegModel(InteractiveSegmentation):
                     image_np = self._inference_image_cache.get(hash_str)
 
                 # Crop the image
-                if isinstance(image_np, list) and len(image_np) > 0:
-                    image_np = image_np[0]
-                img_height, img_width = image_np.shape[:2]  # original image size
                 image_np = functional.crop_image(crop, image_np)
                 image_path = os.path.join(app_dir, f"{time.time()}_{rand_str(10)}.jpg")
                 sly_image.write(image_path, image_np)
 
-                # Prepare init_mask: contract mask first, deprecated figure_id as fallback
-                try:
-                    init_mask = init_mask_lib.resolve_init_mask(
-                        smtool_state, api, self._init_mask_cache, img_height, img_width
-                    )
-                except init_mask_lib.MaskDecodeError as exc:
-                    sly.logger.warn(f"Invalid Smart Tool init mask: {exc}")
-                    silent_remove(image_path)
-                    result.append(
-                        {
-                            "origin": None,
-                            "bitmap": None,
-                            "success": False,
-                            "error": str(exc),
-                        }
-                    )
-                    continue
+                # Prepare init_mask (only for images)
+                figure_id = smtool_state.get("figure_id")
+                image_id = smtool_state.get("image_id")
+                if smtool_state.get("init_figure") is True and image_id is not None:
+                    # Download and save in Cache
+                    init_mask = functional.download_init_mask(api, figure_id, image_id)
+                    self._init_mask_cache[figure_id] = init_mask
+                elif self._init_mask_cache.get(figure_id) is not None:
+                    # Load from Cache
+                    init_mask = self._init_mask_cache[figure_id]
+                else:
+                    init_mask = None
                 if init_mask is not None:
+                    img_info = api.image.get_info_by_id(image_id)
+                    h, w = img_info.height, img_info.width
+                    init_mask = functional.bitmap_to_mask(init_mask, h, w)
                     init_mask = functional.crop_image(crop, init_mask)
                     assert init_mask.shape[:2] == image_np.shape[:2]
                 settings["init_mask"] = init_mask

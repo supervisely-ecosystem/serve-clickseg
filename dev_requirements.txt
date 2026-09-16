@@ -1,0 +1,8 @@
+# Dependencies for the offline tests in tests/unit only.
+# The app image already provides supervisely, torch and the ClickSEG stack.
+#
+# The image ships requests 2.28 with urllib3 1.x, and `requests_toolbelt`
+# (imported by supervisely) needs `requests.packages.urllib3.contrib.appengine`,
+# which was removed in urllib3 2.x. Keep the test environment on urllib3 1.x so
+# `import supervisely` keeps working there.
+urllib3<2

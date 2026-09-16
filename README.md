@@ -395,6 +395,43 @@ Iterative Training: Yes
 <img src="https://user-images.githubusercontent.com/119248312/229995028-d33b0423-6510-4747-a929-e0e860ccabff.jpg" width="90%"/>
 </div>
 
+## Smart Tool initialization (for developers)
+
+On the first request of a Smart Tool session the labeling tool sends the object
+being edited as a tight binary mask in full image / video frame coordinates:
+
+```json
+{
+  "init_figure": true,
+  "mask": { "origin": [x, y], "data": "<encoded bitmap>" },
+  "local_figure_id": "<session figure identity>"
+}
+```
+
+`origin` is the top-left position of the tight mask and `data` uses the same
+encoding as the `bitmap` field of Supervisely Bitmap JSON geometry. The app
+decodes the mask, places it on the full image / frame (clipping to the bounds)
+and crops it exactly like the image, so no annotation or figure download is
+needed to start a session. `mask` is preferred whenever `figure_id` is also
+present, and a malformed mask is rejected with
+`{"origin": null, "bitmap": null, "success": false, "error": "..."}` and HTTP
+400 instead of silently falling back to `figure_id`.
+
+The decoded mask is cached by `local_figure_id` (legacy `figure_id` otherwise),
+so later click requests of the same session may omit `mask`.
+
+`init_figure` + `figure_id` without `mask` is still supported for legacy
+callers: the figure geometry is downloaded from the API (images) or from the
+video figure info (videos) and a deprecation warning is logged.
+
+Offline regression tests for this logic need neither weights nor a running
+service:
+
+```sh
+python -m unittest discover -s tests/unit -t tests/unit   # contract + route tests
+python tests/unit/baseline_regression.py                  # baseline vs. current behavior
+```
+
 ## Acknowledgment
 
 This app is based on the great work `ClickSEG: A Codebase for Click-Based Interactive Segmentation` [github](https://github.com/XavierCHEN34/ClickSEG). ![GitHub Org's stars](https://img.shields.io/github/stars/XavierCHEN34/ClickSEG?style=social)
