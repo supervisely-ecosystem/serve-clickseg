@@ -147,6 +147,14 @@ def resolve_init_mask(
     2. deprecated ``init_figure`` + ``figure_id`` download (images and videos),
     3. mask cached by ``local_figure_id`` / legacy ``figure_id`` (continuation).
 
+    A request without the ``mask`` field (or with a JSON ``null`` in it) is a
+    continuation / legacy request, not an invalid one: later click requests of
+    a session may omit the mask. Any other unusable ``mask`` payload is an
+    error.
+
+    Only a mask that is usable on this image / frame is cached, so a rejected
+    request can not poison the continuation cache.
+
     :return: ``uint8`` full image / frame mask with ``0`` / ``255`` values or
         ``None`` when the request carries no initial object.
     :raises MaskDecodeError: the supplied ``mask`` is unusable; there is no
@@ -157,14 +165,13 @@ def resolve_init_mask(
     has_legacy_source = (
         context.get("image_id") is not None or context.get("video") is not None
     )
+    from_cache = False
     if mask_json is not None:
         bitmap = decode_context_mask(mask_json)
         sly.logger.debug(
             "Smart Tool init mask taken from the request payload.",
             extra={"cache_key": cache_key, "origin": mask_json.get("origin")},
         )
-        if cache_key is not None:
-            init_mask_cache[cache_key] = bitmap
     elif context.get("init_figure") is True and has_legacy_source:
         if context.get("figure_id") is None:
             sly.logger.warn(
@@ -173,13 +180,15 @@ def resolve_init_mask(
             )
             return None
         bitmap = _download_legacy_init_mask(api, context)
-        if cache_key is not None:
-            init_mask_cache[cache_key] = bitmap
     elif cache_key is not None and init_mask_cache.get(cache_key) is not None:
         bitmap = init_mask_cache.get(cache_key)
+        from_cache = True
         sly.logger.debug(
             "Smart Tool init mask restored from cache.", extra={"cache_key": cache_key}
         )
     else:
         return None
-    return place_mask_on_frame(bitmap, img_height, img_width)
+    mask = place_mask_on_frame(bitmap, img_height, img_width)
+    if not from_cache and cache_key is not None:
+        init_mask_cache[cache_key] = bitmap
+    return mask

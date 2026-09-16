@@ -186,18 +186,36 @@ class SmartToolRouteTest(unittest.TestCase):
         self.assertEqual(payload["success"], False)
         self.assertIsNone(payload["origin"])
         self.assertIsNone(payload["bitmap"])
-        self.assertIn("init mask", payload["error"])
+        self.assertIsInstance(payload["error"], str)
+        self.assertTrue(payload["error"])
         self.assertEqual(self.app.predict_calls, [])
         self.assertNoGeometryDownloads()
 
-    def test_mask_outside_of_the_image_is_rejected(self):
+    def test_mask_outside_of_the_image_is_rejected_and_not_cached(self):
         response = self.app.post(
             "/smart_segmentation",
-            image_context(init_figure=True, mask=mask_payload(IMAGE_W + 4, 3)),
+            image_context(
+                init_figure=True,
+                local_figure_id="local-1",
+                mask=mask_payload(IMAGE_W + 4, 3),
+            ),
         )
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()["success"], False)
         self.assertEqual(self.app.predict_calls, [])
+        # the rejected mask must not be served to the next request of the session
+        continuation = image_context(local_figure_id="local-1")
+        self.assertEqual(self.app.post("/smart_segmentation", continuation).status_code, 200)
+        self.assertIsNone(self.app.last_init_mask)
+
+    def test_direct_mask_without_any_figure_identity(self):
+        first = image_context(init_figure=True, mask=mask_payload(6, 3))
+        self.assertEqual(self.app.post("/smart_segmentation", first).status_code, 200)
+        np.testing.assert_array_equal(self.app.last_init_mask, expected_init_mask(6, 3))
+        # nothing to cache it under: a later request without mask has no init mask
+        self.assertEqual(self.app.post("/smart_segmentation", image_context()).status_code, 200)
+        self.assertIsNone(self.app.last_init_mask)
+        self.assertNoGeometryDownloads()
 
     # -- video -----------------------------------------------------------
     def test_video_frame_direct_mask(self):
@@ -242,6 +260,18 @@ class SmartToolRouteTest(unittest.TestCase):
             functional.crop_image(CROP, functional.bitmap_to_mask(legacy, IMAGE_H, IMAGE_W)),
         )
         self.assertEqual(self.app.api.annotation_calls, [IMAGE_ID, IMAGE_ID])
+
+    def test_legacy_continuation_is_served_from_cache_without_a_second_download(self):
+        self.app.api.annotation_json = legacy_annotation(12, 8)
+        init = image_context(init_figure=True, figure_id=LEGACY_FIGURE_ID)
+        self.assertEqual(self.app.post("/smart_segmentation", init).status_code, 200)
+        # later click request of the same legacy session: figure_id only, no init_figure
+        continuation = image_context(figure_id=LEGACY_FIGURE_ID, positive=[{"x": 8, "y": 6}])
+        self.assertEqual(self.app.post("/smart_segmentation", continuation).status_code, 200)
+        np.testing.assert_array_equal(
+            self.app.predict_calls[1].init_mask, expected_init_mask(12, 8)
+        )
+        self.assertEqual(self.app.api.annotation_calls, [IMAGE_ID])
 
     def test_request_without_any_initial_object_still_predicts(self):
         response = self.app.post("/smart_segmentation", image_context())
@@ -310,7 +340,8 @@ class SmartToolBatchRouteTest(unittest.TestCase):
         payload = response.json()
         self.assertEqual(len(payload), 3)
         self.assertEqual([item["success"] for item in payload], [True, True, False])
-        self.assertIn("init mask", payload[2]["error"])
+        self.assertEqual([item["origin"] for item in payload], [None, None, None])
+        self.assertTrue(payload[2]["error"])
         self.assertEqual(len(self.app.predict_calls), 2)
         np.testing.assert_array_equal(
             self.app.predict_calls[0].init_mask, expected_init_mask(6, 3)

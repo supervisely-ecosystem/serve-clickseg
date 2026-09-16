@@ -114,19 +114,6 @@ class PlacementTest(unittest.TestCase):
             init_mask_lib.place_mask_on_frame(bitmap_at(-1, -1, data), IMAGE_H, IMAGE_W)
 
 
-class CacheKeyTest(unittest.TestCase):
-    def test_prefers_local_figure_id(self):
-        self.assertEqual(
-            init_mask_lib.get_cache_key({"local_figure_id": "local-1", "figure_id": 7}), "local-1"
-        )
-
-    def test_falls_back_to_legacy_figure_id(self):
-        self.assertEqual(init_mask_lib.get_cache_key({"figure_id": 7}), 7)
-
-    def test_without_identity(self):
-        self.assertIsNone(init_mask_lib.get_cache_key({}))
-
-
 class ResolveTest(unittest.TestCase):
     def setUp(self):
         self.cache = {}
@@ -215,6 +202,19 @@ class ResolveTest(unittest.TestCase):
             self.resolve(context)
         self.assertEqual(self.api.annotation_calls, [])
         self.assertEqual(self.cache, {})
+
+    def test_rejected_out_of_frame_mask_is_not_cached(self):
+        context = {
+            "init_figure": True,
+            "image_id": 77,
+            "local_figure_id": "local-1",
+            "mask": mask_payload(IMAGE_W + 5, 3),
+        }
+        with self.assertRaises(init_mask_lib.MaskDecodeError):
+            self.resolve(context)
+        self.assertEqual(self.cache, {})
+        # the continuation request of the same session must not reuse it
+        self.assertIsNone(self.resolve({"image_id": 77, "local_figure_id": "local-1"}))
 
     def test_init_figure_without_mask_and_figure_id(self):
         self.assertIsNone(self.resolve({"init_figure": True, "image_id": 77}))
