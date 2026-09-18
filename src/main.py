@@ -7,7 +7,7 @@ from pathlib import Path
 from cachetools import LRUCache
 
 import supervisely as sly
-from streaming_frames import use_streaming_frames
+from src.streaming_frames import use_streaming_frames
 from dotenv import load_dotenv
 from fastapi import Response, Request, status
 
