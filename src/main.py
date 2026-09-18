@@ -7,6 +7,7 @@ from pathlib import Path
 from cachetools import LRUCache
 
 import supervisely as sly
+from src.streaming_frames import use_streaming_frames
 from dotenv import load_dotenv
 from fastapi import Response, Request, status
 
@@ -458,6 +459,9 @@ if sly.is_production() and not os.environ.get("DEBUG_WITH_SLY_NET"):
     # production
     m = ClickSegModel(use_gui=True, custom_inference_settings=inference_settings_path)
     m.gui._models_table.select_row(ClickSegModel.DEFAULT_ROW_IDX)
+    # Frames from the video rather than one videos.download-frame request
+    # each. See streaming_frames.py for why.
+    use_streaming_frames(m)
     m.serve()
 else:
     # debug
@@ -465,6 +469,9 @@ else:
     print("Using device:", device)
     m = ClickSegModel(use_gui=True, custom_inference_settings=inference_settings_path)
     m.gui._models_table.select_row(ClickSegModel.DEFAULT_ROW_IDX)
+    # Frames from the video rather than one videos.download-frame request
+    # each. See streaming_frames.py for why.
+    use_streaming_frames(m)
     # m.load_on_device(m.model_dir, device)
     if os.environ.get("DEBUG_WITH_SLY_NET"):
         print("mode=DEBUG_WITH_SLY_NET")
